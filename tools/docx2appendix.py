@@ -79,6 +79,33 @@ def escape(text):
     return _ESC_RE.sub(lambda m: _ESC[m.group(0)], text)
 
 
+# Numeric reference markers copied from Word ([9], [28], ...) mapped to BibTeX
+# keys so they become real \cite commands. Numbers not listed here are left as
+# literal bracketed text. Edit this map (and references.bib) to match your own
+# bibliography; the numbers are the reference numbers used in the Word source.
+CITE_MAP = {
+    "9": "bringoltz2025clear",    # CLEAR dataset (NeurIPS 2025)
+    "28": "davies2022napierone",  # NapierOne dataset
+}
+_CITE_RE = re.compile(r"\[(\d+)\]")
+
+
+def render_text(text):
+    """Escape text, turning known ``[N]`` reference markers into ``\\cite{}``."""
+    parts = []
+    last = 0
+    for m in _CITE_RE.finditer(text):
+        parts.append(escape(text[last:m.start()]))
+        num = m.group(1)
+        if num in CITE_MAP:
+            parts.append(r"\cite{" + CITE_MAP[num] + "}")
+        else:
+            parts.append(escape(m.group(0)))  # keep an unmapped [N] literal
+        last = m.end()
+    parts.append(escape(text[last:]))
+    return "".join(parts)
+
+
 # ---------------------------------------------------------------------------
 # Document walking
 # ---------------------------------------------------------------------------
@@ -124,7 +151,7 @@ def render_table(rows, caption, label):
     long_cols = [i for i, m in enumerate(data_maxlen) if m > 24]
 
     def cell(text, bold=False):
-        out = escape(text)
+        out = render_text(text)
         return (r"\textbf{" + out + "}") if bold and text.strip() else out
 
     def row_tex(cells, bold=False):
@@ -256,9 +283,9 @@ def convert_file(path, letter):
                         r"semantics)\.\s+(.*)$", text, re.S)
         if lead:
             out.append(r"\noindent\textit{" + escape(lead.group(1))
-                       + ".} " + escape(lead.group(2)))
+                       + ".} " + render_text(lead.group(2)))
         else:
-            out.append(escape(text))
+            out.append(render_text(text))
         out.append("")
 
     return out

@@ -62,9 +62,12 @@ Character handling: LaTeX metacharacters are escaped, common Unicode is mapped
 The converter handles structure and formatting, but a few things still need a
 human pass:
 
-1. **Citations.** Cross-references like `[9]` and `[28]` are copied as literal
-   text. Replace them with real `\cite{key}` commands and add the entries to
-   `references.bib` if you want them linked and renumbered.
+1. **Citations.** Numeric reference markers (`[9]`, `[28]`, …) are turned into
+   real `\cite{}` commands via the `CITE_MAP` at the top of the script; any
+   number not in that map is left as literal `[N]`. The two currently mapped
+   (`bringoltz2025clear` for CLEAR and `davies2022napierone` for NapierOne)
+   have entries in `references.bib`. Reconcile both keys with your main-thesis
+   bibliography so the numbers renumber correctly in the full document.
 2. **Cross-references.** Mentions of "Table 3.3", "Section 3.2", "Chapter 4"
    are plain text. Convert to `\ref{}`/`\autoref{}` if you want live links.
 3. **Front matter.** Author, title, committee, and abstract are *not* part of
