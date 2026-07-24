@@ -14,6 +14,9 @@
 \usepackage{caption,setspace}
 \captionsetup{font={stretch=1.5}}
 \usepackage[flushleft]{threeparttable}
+\usepackage{tabularx}   % width-constrained tables (appendices)
+\usepackage{longtable}  % tables that break across pages (appendices)
+\usepackage{adjustbox}  % scale wide tables to \textwidth (appendices)
 
 \makeatletter
 \renewcommand{\@dotsep}{10000}
@@ -100,6 +103,9 @@ Summarize key findings, limitations, and future work.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
+
+% Appendices (generated from Word by tools/docx2appendix.py).
+\input{appendices}
 
 \biography
 
