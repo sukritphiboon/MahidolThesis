@@ -113,7 +113,7 @@ This appendix documents the implementation details of the scripted benign worklo
 
 \section{File-Pool Configuration}
 
-The five set identifiers used in the evaluated dataset select combinations of NapierOne files \cite{davies2022napierone}, in-house documents, downloaded-file collections, and pictures derived from the sources described in Section 3.2. The limits below are configuration caps for selected components rather than the amount read or written during an individual task.
+The five set identifiers used in the evaluated dataset select combinations of NapierOne files \cite{ref28}, in-house documents, downloaded-file collections, and pictures derived from the sources described in Section 3.2. The limits below are configuration caps for selected components rather than the amount read or written during an individual task.
 
 \begin{table}[htbp]
 \centering
@@ -247,7 +247,7 @@ The six offset bits encode 64 page regions at 4 KiB granularity. The representat
 
 \subsection{Differences from CLEAR}
 
-The prototype adapts CLEAR's command-token concept \cite{bringoltz2025clear} but does not reproduce its NVMe encoding. Table C.3 separates the implemented Linux VFS representation from the CLEAR specification.
+The prototype adapts CLEAR's command-token concept \cite{ref9} but does not reproduce its NVMe encoding. Table C.3 separates the implemented Linux VFS representation from the CLEAR specification.
 
 \begin{table}[htbp]
 \centering
@@ -255,7 +255,7 @@ The prototype adapts CLEAR's command-token concept \cite{bringoltz2025clear} but
 \caption{Tokenization differences between CLEAR and the prototype.}\label{tab:appc-3}
 \begin{tabularx}{\textwidth}{lXX}
 \hline
-\textbf{Feature} & \textbf{CLEAR \cite{bringoltz2025clear}} & \textbf{Prototype} \\
+\textbf{Feature} & \textbf{CLEAR \cite{ref9}} & \textbf{Prototype} \\
 \hline
 Sensor domain & Windows NVMe commands & Linux VFS READ, WRITE, and RENAME events \\
 Offset & 6 bits; 2 MiB granularity; 128 MiB coverage & 6 bits; 4 KiB granularity; 256 KiB coverage \\
@@ -648,7 +648,7 @@ This replay compares a probability output after every event with an output after
 \centering
 \caption{Per-event and per-chunk output-frequency comparison.}\label{tab:appf-1}
 \begin{adjustbox}{max width=\textwidth}
-\small
+\footnotesize
 \begin{tabular}{llrrllllr}
 \hline
 \textbf{Model} & \textbf{Reporting} & \textbf{nMW} & \textbf{nBN} & \textbf{MDR (\%)} & \textbf{MBD3 P75 (KiB)} & \textbf{FPR (\%)} & \textbf{ms/\allowbreak{}event} & \textbf{events/\allowbreak{}s} \\
@@ -771,7 +771,7 @@ The SougoLock diagnostic retrains five configurations on the same held-out-famil
 \centering
 \caption{SougoLock five-configuration root-cause ablation.}\label{tab:appf-5}
 \begin{adjustbox}{max width=\textwidth}
-\small
+\footnotesize
 \begin{tabular}{llllllrl}
 \hline
 \textbf{Configuration} & \textbf{Offset encoding} & \textbf{Other change or fields removed} & \textbf{MDR (\%)} & \textbf{AUC} & \textbf{TP/\allowbreak{}FN} & \textbf{FP} & \textbf{F1} \\

@@ -1,3 +1,56 @@
+# Word → LaTeX converters
+
+Two scripts turn the Word sources into LaTeX for the `muthesis2026` template:
+
+- **`docx2thesis.py`** — the main thesis file (front matter, Chapters I–V,
+  figures, tables, and the IEEE reference list).
+- **`docx2appendix.py`** — the appendix files (Appendix A–F). Its escaping,
+  table-rendering, and citation helpers are imported and reused by
+  `docx2thesis.py`, so table styling and `\cite{refN}` numbering stay identical
+  across the body and the appendices.
+
+## docx2thesis.py
+
+```bash
+pip install python-docx
+python3 tools/docx2thesis.py thesis.docx
+```
+
+Outputs, written next to the template:
+
+| File | Purpose |
+|------|---------|
+| `chapters.tex` | Chapters I–V as `\chapter`/`\section`/`\subsection`, with figures and tables |
+| `references.tex` | a `thebibliography` built verbatim from the numbered IEEE list |
+| `abstract.tex` | the abstract body, pulled in by `\abstract{\input{abstract}}` |
+| `acknowledgements.tex` | the acknowledgements body |
+| `figures/figX-Y.png` | every embedded figure, extracted and named by its number |
+
+It skips the title page, the embedded table of contents, the appendices (done
+separately), and the list of abbreviations — the class regenerates the first
+two. `CHAPTER I` + its title line become one `\chapter{}`; `1.2 Heading`
+becomes `\section{Heading}` (the class re-numbers); every `[N]` citation
+becomes `\cite{refN}`, matched by `\bibitem{refN}` in `references.tex`. It also
+prints the front-matter metadata (author, advisors, keywords, …) to copy into
+`preamble.tex`.
+
+### Manual follow-ups after conversion
+
+- **Title.** The title page says "…Ransomware Detection"; the abstract-page
+  header adds "& Prevention". Set `\title{}` to the official wording.
+- **Committee & ranks.** `preamble.tex` is filled with the advisor
+  (Ittipon Rassameeroj) and co-advisor (Vasaka Visoottiviseth); the third
+  advisory-committee member (Assadarat Khurat, Dr.-Ing.), the exam-committee
+  chair, the faculty dean, and the academic ranks (`Dr.` vs `Asst.~Prof.` …)
+  still need confirming. Thai-language fields are left as placeholders.
+- **Cross-references.** "Table 3.3", "Figure 4.2", "Chapter 4" are plain text;
+  convert to `\ref{}`/`\autoref{}` if you want live links (labels already exist
+  on the generated tables and figures, e.g. `tab:4-4`, `fig:2-1`).
+- **Figures.** Extracted at their embedded resolution; replace any you have a
+  higher-resolution original for.
+
+---
+
 # Word → LaTeX appendix converter
 
 `docx2appendix.py` converts Word appendix files into a single `appendices.tex`
