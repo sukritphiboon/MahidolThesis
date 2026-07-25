@@ -73,6 +73,8 @@ FIG_CAP_RE = re.compile(r"^Figure\s+([0-9A-Z]+\.\d+)\s+([A-Z].*)$", re.S)
 TAB_CAP_RE = re.compile(r"^Table\s+([0-9A-Z]+\.\d+)\s+(.*\S)\s*$", re.S)
 H2_RE = re.compile(r"^\d+\.\d+\s*(.*)$", re.S)
 H3_RE = re.compile(r"^\d+\.\d+\.\d+\s*(.*)$", re.S)
+# Split a numbered heading into its number ("4.5.1") and its title.
+NUM_TITLE_RE = re.compile(r"^(\d+(?:\.\d+)+)\s+(.*\S)\s*$", re.S)
 
 
 def extract_figures(docx_path):
@@ -226,6 +228,7 @@ def _emit_chapters(allb, start, stop, rid2file):
     pending_tab_cap = None            # (num, text) captured from a Table caption
     skip_caps = set()                 # block ids consumed as fig/tab captions
     list_buffer = []
+    chap_no = [0]                     # running chapter number for \label{chap:N}
 
     def flush_list():
         if list_buffer:
@@ -301,29 +304,28 @@ def _emit_chapters(allb, start, stop, rid2file):
         if style == "Heading 1":
             flush_list()
             if re.match(r"^CHAPTER\s+[IVX]+$", t):
+                chap_no[0] += 1
                 # the next Heading 1 is the chapter title
                 for j in range(i + 1, stop):
                     tj = allb[j].text.strip() if isinstance(allb[j], Paragraph) else ""
                     if tj:
-                        out.append(r"\chapter{%s}" % escape(titlecase(tj)))
+                        out.append(r"\chapter{%s}\label{chap:%d}"
+                                   % (escape(titlecase(tj)), chap_no[0]))
                         out.append("")
                         skip_caps.add(j)
                         break
             i += 1
             continue
 
-        if style == "Heading 2":
+        if style in ("Heading 2", "Heading 3"):
             flush_list()
-            m = H2_RE.match(t)
-            out.append(r"\section{%s}" % escape(m.group(1) if m else t))
-            out.append("")
-            i += 1
-            continue
-
-        if style == "Heading 3":
-            flush_list()
-            m = H3_RE.match(t)
-            out.append(r"\subsection{%s}" % escape(m.group(1) if m else t))
+            m = NUM_TITLE_RE.match(t)
+            cmd = "section" if style == "Heading 2" else "subsection"
+            if m:
+                out.append(r"\%s{%s}\label{sec:%s}"
+                           % (cmd, escape(m.group(2)), m.group(1)))
+            else:
+                out.append(r"\%s{%s}" % (cmd, escape(t)))
             out.append("")
             i += 1
             continue

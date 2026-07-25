@@ -3,11 +3,11 @@
 \appendices
 
 % ---- Appendix A: 494f7c98-appendix_A_malware_catalogue.docx ----
-\chapter{Malware Sample Catalogue}
+\chapter{Malware Sample Catalogue}\label{app:A}
 
 This appendix provides sample-level provenance for the ransomware binaries considered during dataset construction. Aggregate family-level run counts, event volumes, and behavioral characteristics are reported in Tables 3.3 and 4.3 and are not repeated here.
 
-\section{Sample-Acquisition Summary}
+\section{Sample-Acquisition Summary}\label{sec:A.1}
 
 The sample-acquisition process began with 30 candidate families comprising 63 Linux ELF binaries. Nineteen families comprising 47 binaries were configured for sandbox detonation, and fourteen families comprising twenty-eight binaries produced the 494 malware-session recordings used in the evaluation.
 
@@ -26,7 +26,7 @@ Used in the evaluation dataset & 14 & 28 \\
 \end{tabularx}
 \end{table}
 
-\section{Binary Samples Included in the Evaluation Dataset}
+\section{Binary Samples Included in the Evaluation Dataset}\label{sec:A.2}
 
 \begin{center}
 \begin{small}
@@ -79,7 +79,7 @@ Total & 28 binaries & 494 & --- \\
 
 \noindent\textit{Note.} SHA-256 values are abbreviated to the first 16 hexadecimal characters; the complete hashes are retained in the corresponding recording\_\allowbreak{}metadata.json files. Both indicates that the binary appears in ransomware-only and mixed-mode recordings.
 
-\section{Excluded Families}
+\section{Excluded Families}\label{sec:A.3}
 
 The families below did not enter the evaluation dataset. Five were present in the configured target set, while Trigona was represented by a collection profile but was not counted among the nineteen configured target families.
 
@@ -101,19 +101,19 @@ Trigona & Profiled candidate & Failed to produce a productive detonation under t
 \end{tabularx}
 \end{table}
 
-\section{Reproducibility Notes}
+\section{Reproducibility Notes}\label{sec:A.4}
 
 The analytical run counts and family membership reported in this appendix were derived from the recording metadata and results/\allowbreak{}family\_\allowbreak{}encryption\_\allowbreak{}strategy.json. The collection configuration files document candidate targets but may contain state changes made after data collection; they were therefore not used to infer the final analytical run counts. Binary hashes identify samples but do not imply that the corresponding binaries can be publicly redistributed. Any future release must specify a permanent location, license, and applicable malware-sharing restrictions.
 
 
 % ---- Appendix B: 60f2f43f-appendix_B_benign_workload.docx ----
-\chapter{Benign Workload Specification}
+\chapter{Benign Workload Specification}\label{app:B}
 
-This appendix documents the implementation details of the scripted benign workload generator used in mixed-mode and benign-only data collection. Chapter 3 summarizes the role of benign workloads in dataset construction; this appendix records the file-pool mapping, task implementations, scheduling behavior, and reproducibility limitations needed to audit the evaluated workload generator.
+This appendix documents the implementation details of the scripted benign workload generator used in mixed-mode and benign-only data collection. Chapter~\ref{chap:3} summarizes the role of benign workloads in dataset construction; this appendix records the file-pool mapping, task implementations, scheduling behavior, and reproducibility limitations needed to audit the evaluated workload generator.
 
-\section{File-Pool Configuration}
+\section{File-Pool Configuration}\label{sec:B.1}
 
-The five set identifiers used in the evaluated dataset select combinations of NapierOne files \cite{ref28}, in-house documents, downloaded-file collections, and pictures derived from the sources described in Section 3.2. The limits below are configuration caps for selected components rather than the amount read or written during an individual task.
+The five set identifiers used in the evaluated dataset select combinations of NapierOne files \cite{ref28}, in-house documents, downloaded-file collections, and pictures derived from the sources described in Section~\ref{sec:3.2}. The limits below are configuration caps for selected components rather than the amount read or written during an individual task.
 
 \begin{table}[htbp]
 \centering
@@ -134,9 +134,9 @@ The five set identifiers used in the evaluated dataset select combinations of Na
 
 \noindent\textit{Note.} Set IDs 1 and 2 share underlying pool paths, as do Set IDs 3 and 4. Dataset partitions were subsequently formed at the recording level; set ID did not define the training, validation, or test partition.
 
-\section{Implemented Task Families}
+\section{Implemented Task Families}\label{sec:B.2}
 
-The evaluated script implements seven task methods. On each loop iteration, one method is selected uniformly at random. Table B.2 describes the operations executed by the code and the expected VFS activity relevant to the detector.
+The evaluated script implements seven task methods. On each loop iteration, one method is selected uniformly at random. Table~\ref{tab:appb-2} describes the operations executed by the code and the expected VFS activity relevant to the detector.
 
 \begin{table}[htbp]
 \centering
@@ -159,7 +159,7 @@ Web browsing & Firefox headless writes dumped page content; wget is used as a fa
 
 \noindent\textit{Note.} Expected VFS activity is derived from the implementation. Actual task output varies with file availability and external command success.
 
-\section{Scheduling and Orchestrator Invocation}
+\section{Scheduling and Orchestrator Invocation}\label{sec:B.3}
 
 The generator selects one of seven task methods uniformly and sleeps for U(0.5, 2.0) seconds after each selection. The workspace is cleared whenever the internal task counter reaches a multiple of 30. This counter records attempts rather than verified command completion. No random seed is fixed, so the exact task sequence is not deterministically reproducible.
 
@@ -167,23 +167,23 @@ In mixed mode, the orchestrator starts the generator, waits three seconds, verif
 
 \noindent\textit{Note.} In this version, --profile and --data-root are accepted but do not alter behavior; the script uses a fixed task list and a configured DATA\_\allowbreak{}ROOT constant.
 
-\section{Capture, Labeling, and Tokenization}
+\section{Capture, Labeling, and Tokenization}\label{sec:B.4}
 
 The generator and its children use ordinary file operations captured by the same vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename hooks as malware. In mixed recordings, only events matching the run-specific malware identifier receive Label = 1; other events receive Label = 0. Standalone benign recordings are labeled 0 by construction. Both classes then use the same tokenization implementation.
 
-\section{Scope and Reproducibility Limitations}
+\section{Scope and Reproducibility Limitations}\label{sec:B.5}
 
 The generator provides controlled behavioral diversity, not a representative distribution for production Linux hosts. Because set contents overlap, scheduling is unseeded, and web tasks depend on external availability, independent benign workloads remain necessary to estimate false-positive generalization.
 
 
 % ---- Appendix C: eb8b2fa3-appendix_C_tokenisation.docx ----
-\chapter{Sensor, Tokenization, and Data-Conversion Specification}
+\chapter{Sensor, Tokenization, and Data-Conversion Specification}\label{app:C}
 
-This appendix records implementation details needed to audit the data-collection sensor, the event tokenizer, and the CSV-to-Parquet conversion described in Chapter 3. It supplements the conceptual discussion without repeating the experimental results reported in Chapters 4 and 5.
+This appendix records implementation details needed to audit the data-collection sensor, the event tokenizer, and the CSV-to-Parquet conversion described in Chapter~\ref{chap:3}. It supplements the conceptual discussion without repeating the experimental results reported in Chapters 4 and 5.
 
-\section{Data-Collection Sensor Implementation}
+\section{Data-Collection Sensor Implementation}\label{sec:C.1}
 
-The collection sensor in Orchestrator\_\allowbreak{}Benign/\allowbreak{}sensor\_\allowbreak{}full.py uses BCC to attach kprobes to three Linux VFS functions. Each captured event is assigned a sensor opcode before delivery to user space. Table C.1 gives the complete mapping.
+The collection sensor in Orchestrator\_\allowbreak{}Benign/\allowbreak{}sensor\_\allowbreak{}full.py uses BCC to attach kprobes to three Linux VFS functions. Each captured event is assigned a sensor opcode before delivery to user space. Table~\ref{tab:appc-1} gives the complete mapping.
 
 \begin{table}[htbp]
 \centering
@@ -201,17 +201,17 @@ RENAME & 5 & vfs\_\allowbreak{}rename & trace\_\allowbreak{}rename \\
 \end{adjustbox}
 \end{table}
 
-\subsection{Path Reconstruction and Filtering}
+\subsection{Path Reconstruction and Filtering}\label{sec:C.1.1}
 
 Because a complete path is not supplied directly to the probe, the sensor follows the dentry parent chain through seven fixed fields (d0 to d6). User space reverses the nonempty components and joins them into a relative path. The collection implementation prefixes events from the target NVMe device with the fixed mount path used by the collection environment and prefixes other events with '/\allowbreak{}'. The depth is bounded to keep the BPF program verifier-safe and the event record fixed in size; paths deeper than seven components can therefore be truncated.
 
-For READ and WRITE, the probe rejects the sensor's own PID and PIDs below 100 before submitting an event. The RENAME handler rejects the sensor's own PID but does not apply the PID-below-100 test. After delivery, the collection logger removes events whose process name contains gnome-shell, Xorg, vboxguest, VBoxService, sshd, sftp-server, or systemd. It also discards /\allowbreak{}tmp, /\allowbreak{}proc, and /\allowbreak{}sys events outside the target disk. These collection-time exclusions are distinct from the six-process post-collection noise filter described in Section C.2.3.
+For READ and WRITE, the probe rejects the sensor's own PID and PIDs below 100 before submitting an event. The RENAME handler rejects the sensor's own PID but does not apply the PID-below-100 test. After delivery, the collection logger removes events whose process name contains gnome-shell, Xorg, vboxguest, VBoxService, sshd, sftp-server, or systemd. It also discards /\allowbreak{}tmp, /\allowbreak{}proc, and /\allowbreak{}sys events outside the target disk. These collection-time exclusions are distinct from the six-process post-collection noise filter described in Section~\ref{sec:C.2.3}.
 
-\subsection{Buffering and Probe Attachment}
+\subsection{Buffering and Probe Attachment}\label{sec:C.1.2}
 
 The collection sensor uses a one-record BPF\_\allowbreak{}PERCPU\_\allowbreak{}ARRAY as scratch storage and BPF\_\allowbreak{}PERF\_\allowbreak{}OUTPUT for kernel-to-user transfer. The user-space reader opens the perf buffer with page\_\allowbreak{}cnt = 8192 pages per CPU and registers a lost-event callback. The callback accumulates dropped-event counts and reports them at shutdown. The probes are attached to vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename in that order. The real-time prototype uses the same three storage hooks and opcode assignments but transfers events through a shared 32 MB BPF ring buffer; it is a BCC-based implementation rather than a CO-RE program.
 
-\section{Event Tokenization}
+\section{Event Tokenization}\label{sec:C.2}
 
 Each VFS event produces two 10-bit integers in a vocabulary of 1,024 values. Two index bits identify the token positions, leaving 18 feature bits per event. Offline LOFO processing calls inference/\allowbreak{}batch\_\allowbreak{}tokenizer.py, which invokes the same tokenize\_\allowbreak{}event function used by real-time inference. Events are sorted by timestamp within each PID, and temporal and overlap state is maintained separately for each PID.
 
@@ -241,13 +241,13 @@ Token2 & index & 1 & Constant 1 \\
 
 \noindent\textit{Note.} Sensor READ opcode 2 is remapped to model opcode 0. Sensor WRITE remains 1, and RENAME remains 5 before opcode\_\allowbreak{}q is clipped to one bit. The dedicated RENAME auxiliary bit preserves the distinction between WRITE and RENAME.
 
-\subsection{Offset and Auxiliary-State Semantics}
+\subsection{Offset and Auxiliary-State Semantics}\label{sec:C.2.1}
 
 The six offset bits encode 64 page regions at 4 KiB granularity. The representation therefore repeats every 64 $\times$ 4 KiB = 256 KiB; it does not preserve absolute file position beyond that range. WaR is set for a WRITE whose byte interval overlaps the latest READ interval stored for the same path. RaR is set when a READ overlaps the previously stored READ interval, after which the stored interval is replaced. The overlap test is min(end\_\allowbreak{}current, end\_\allowbreak{}read) \textgreater{} max(start\_\allowbreak{}current, start\_\allowbreak{}read). State is keyed by path inside a single PID and is not aggregated across processes.
 
-\subsection{Differences from CLEAR}
+\subsection{Differences from CLEAR}\label{sec:C.2.2}
 
-The prototype adapts CLEAR's command-token concept \cite{ref9} but does not reproduce its NVMe encoding. Table C.3 separates the implemented Linux VFS representation from the CLEAR specification.
+The prototype adapts CLEAR's command-token concept \cite{ref9} but does not reproduce its NVMe encoding. Table~\ref{tab:appc-3} separates the implemented Linux VFS representation from the CLEAR specification.
 
 \begin{table}[htbp]
 \centering
@@ -266,11 +266,11 @@ Read history & Overlap attributes derived from command-history intervals & Only 
 \end{tabularx}
 \end{table}
 
-\noindent\textit{Note.} The finite 256 KiB offset period is evaluated diagnostically in the held-out SougoLock fold in Section 4.8. That fold-specific ablation identifies a limitation of the implemented representation; it does not establish that offset encoding determines outcomes for every family.
+\noindent\textit{Note.} The finite 256 KiB offset period is evaluated diagnostically in the held-out SougoLock fold in Section~\ref{sec:4.8}. That fold-specific ablation identifies a limitation of the implemented representation; it does not establish that offset encoding determines outcomes for every family.
 
-\subsection{Post-Collection Noise Filter}
+\subsection{Post-Collection Noise Filter}\label{sec:C.2.3}
 
-The post-collection filter removes events produced by wc, pgrep, ps, awk, top, and dirname from malware-session recordings. This six-name filter produces recording\_\allowbreak{}filtered.parquet and is separate from the seven-name collection-time exclusion in Section C.1.1. Its measured effect is available only for the 280 v478 runs that retain distinct pre-filter and post-filter recordings.
+The post-collection filter removes events produced by wc, pgrep, ps, awk, top, and dirname from malware-session recordings. This six-name filter produces recording\_\allowbreak{}filtered.parquet and is separate from the seven-name collection-time exclusion in Section~\ref{sec:C.1.1}. Its measured effect is available only for the 280 v478 runs that retain distinct pre-filter and post-filter recordings.
 
 \begin{table}[htbp]
 \centering
@@ -289,11 +289,11 @@ RaR per event & 10.53 & 19.93 & +9.40 \\
 
 \noindent\textit{Note.} These values aggregate existing overlap columns; they do not recompute overlaps. The increase is descriptive and partly reflects the smaller event denominator after filtering. It should not be interpreted as a causal estimate of detection improvement.
 
-\section{CSV-to-Parquet Conversion and Output Artifacts}
+\section{CSV-to-Parquet Conversion and Output Artifacts}\label{sec:C.3}
 
 The collection logger writes the raw columns Timestamp, OpCode, Offset, Size, PID, PPID, ProcessName, Path, OldPath, and CmdLine. The orchestrator first attempts to parse the CSV with Pandas' default C engine using explicit numeric data types, low\_\allowbreak{}memory=False, and on\_\allowbreak{}bad\_\allowbreak{}lines='skip'. If that call raises an exception, the complete file is retried with the Python engine, on\_\allowbreak{}bad\_\allowbreak{}lines='skip', and encoding\_\allowbreak{}errors='ignore'. Skipped malformed rows are not recovered or counted individually by the implementation.
 
-After timestamp normalization and path repair, event labels are assigned by case-insensitive matching of the process name against the run-specific SHA-256 prefix or family identifier, as described in Section 3.3.3. The conversion writes the three primary artifacts in Table C.5. Tokenization occurs later and is not stored in recording.parquet.
+After timestamp normalization and path repair, event labels are assigned by case-insensitive matching of the process name against the run-specific SHA-256 prefix or family identifier, as described in Section~\ref{sec:3.3.3}. The conversion writes the three primary artifacts in Table~\ref{tab:appc-5}. Tokenization occurs later and is not stored in recording.parquet.
 
 \begin{table}[htbp]
 \centering
@@ -310,19 +310,19 @@ recording\_\allowbreak{}metadata.json & JSON & Run type, family, SHA-256, worklo
 \end{tabularx}
 \end{table}
 
-\noindent\textit{Note.} recording\_\allowbreak{}filtered.parquet is generated after conversion by applying the six-process filter in Section C.2.3. It is a filtered event recording, not an additional raw-conversion artifact.
+\noindent\textit{Note.} recording\_\allowbreak{}filtered.parquet is generated after conversion by applying the six-process filter in Section~\ref{sec:C.2.3}. It is a filtered event recording, not an additional raw-conversion artifact.
 
-\section{Reproducibility Boundaries}
+\section{Reproducibility Boundaries}\label{sec:C.4}
 
 Exact reproduction requires the same sensor hook coverage, collection-time filters, post-collection filter, per-PID event ordering, opcode remapping, and tokenizer state semantics. The tokenizer's 256 KiB offset periodicity, latest-read-only overlap state, bounded seven-component path reconstruction, and malformed-row skipping are implementation constraints and should be retained when interpreting the reported results.
 
 
 % ---- Appendix D: 72f37c25-appendix_D_orchestration_audit.docx ----
-\chapter{Run Orchestration and Data-Quality Audit Specification}
+\chapter{Run Orchestration and Data-Quality Audit Specification}\label{app:D}
 
-This appendix documents the implemented run-control and data-quality checks referenced in Sections 3.2.4 and 3.3.4. It distinguishes runtime rejection, structural quarantine, and post-collection audit verdicts because these mechanisms operate at different stages and apply different thresholds. Sensor filtering and tokenization are specified separately in Appendix C.
+This appendix documents the implemented run-control and data-quality checks referenced in Sections 3.2.4 and 3.3.4. It distinguishes runtime rejection, structural quarantine, and post-collection audit verdicts because these mechanisms operate at different stages and apply different thresholds. Sensor filtering and tokenization are specified separately in Appendix~\ref{app:C}.
 
-\section{Quality-Control Stages}
+\section{Quality-Control Stages}\label{sec:D.1}
 
 Three quality-control mechanisms are applied to collected recordings. The runtime gate determines whether an orchestration attempt is retained or repeated. The structural quarantine script removes recordings that cannot support malware analysis. The subsequent audit assigns PASS, LOW\_\allowbreak{}SIGNAL, or FAIL from simple event-count and victim-path checks. A LOW\_\allowbreak{}SIGNAL verdict does not itself move or delete a recording; any exclusion based on that verdict requires a separate review decision.
 
@@ -336,16 +336,16 @@ Three quality-control mechanisms are applied to collected recordings. The runtim
 \hline
 Runtime gate & After conversion & Fewer than 50 events with Label = 1 & Delete the attempt directory and return failure for retry. \\
 Structural quarantine & Before dataset assembly & Missing or unreadable recording.parquet; or, for a malware run, zero or fewer than 100 events with Label = 1 & Move the run directory to dataset\_\allowbreak{}quarantine. Benign runs are exempt from the malware-event checks. \\
-Data-quality audit & After collection & Threshold rules in Table D.2 & Record PASS, LOW\_\allowbreak{}SIGNAL, or FAIL in the audit report; no automatic deletion or movement. \\
+Data-quality audit & After collection & Threshold rules in Table~\ref{tab:appd-2} & Record PASS, LOW\_\allowbreak{}SIGNAL, or FAIL in the audit report; no automatic deletion or movement. \\
 \hline
 \end{tabularx}
 \end{table}
 
 \noindent\textit{Note.} The 50-event runtime gate and the 100-event structural-quarantine threshold serve different purposes. A retained attempt can therefore still be quarantined during later dataset preparation if it contains 50--99 malware-labeled events.
 
-\section{Implemented Data-Quality Audit}
+\section{Implemented Data-Quality Audit}\label{sec:D.2}
 
-The audit reads only the Label and Path Name columns from each Parquet recording. It counts total, benign-labeled, and malware-labeled events and counts paths containing '/\allowbreak{}media' as victim-path hits. The implemented decision rules are listed in Table D.2 in evaluation order.
+The audit reads only the Label and Path Name columns from each Parquet recording. It counts total, benign-labeled, and malware-labeled events and counts paths containing '/\allowbreak{}media' as victim-path hits. The implemented decision rules are listed in Table~\ref{tab:appd-2} in evaluation order.
 
 \begin{table}[htbp]
 \centering
@@ -369,9 +369,9 @@ Applicable recordings & None of the preceding conditions & PASS \\
 
 \noindent\textit{Note.} The audit is a threshold-based screening procedure, not a complete forensic validation. The implementation does not test PID stability, temporal gaps, or full schema and data-type consistency beyond the two requested columns.
 
-\subsection{Recordings Excluded after Audit}
+\subsection{Recordings Excluded after Audit}\label{sec:D.2.1}
 
-The audit report identifies the two recordings in Table D.3 as LOW\_\allowbreak{}SIGNAL. They were excluded by a subsequent review and were not automatically quarantined by the structural-quarantine script.
+The audit report identifies the two recordings in Table~\ref{tab:appd-3} as LOW\_\allowbreak{}SIGNAL. They were excluded by a subsequent review and were not automatically quarantined by the structural-quarantine script.
 
 \begin{table}[htbp]
 \centering
@@ -389,9 +389,9 @@ RUN\_\allowbreak{}MIXED\_\allowbreak{}Mirai\_\allowbreak{}Set1\_\allowbreak{}102
 
 \noindent\textit{Note.} Mirai is not one of the fourteen ransomware families used in the final LOFO evaluation. Its exclusion is documented here because the recording appears in the orchestration audit trail.
 
-\section{Orchestration Sequence and Timing}
+\section{Orchestration Sequence and Timing}\label{sec:D.3}
 
-Each full attempt begins from a restored VirtualBox snapshot. The orchestrator then prepares the isolated guest, starts the sensor, optionally starts the benign workload generator, executes the malware sample, monitors process state, and retrieves the event log. Table D.4 records the implemented sequence and principal timing controls.
+Each full attempt begins from a restored VirtualBox snapshot. The orchestrator then prepares the isolated guest, starts the sensor, optionally starts the benign workload generator, executes the malware sample, monitors process state, and retrieves the event log. Table~\ref{tab:appd-4} records the implemented sequence and principal timing controls.
 
 \begin{table}[htbp]
 \centering
@@ -415,9 +415,9 @@ Each full attempt begins from a restored VirtualBox snapshot. The orchestrator t
 \end{tabularx}
 \end{table}
 
-\subsection{Duration Caps}
+\subsection{Duration Caps}\label{sec:D.3.1}
 
-The maximum monitoring duration is selected by workload set rather than fixed at 600 seconds for every run. The current configuration is shown in Table D.5.
+The maximum monitoring duration is selected by workload set rather than fixed at 600 seconds for every run. The current configuration is shown in Table~\ref{tab:appd-5}.
 
 \begin{table}[htbp]
 \centering
@@ -439,7 +439,7 @@ Set 5 & 1,200 \\
 
 \noindent\textit{Note.} For Mirai only, a still-running process with fewer than 100 malware-labeled events can receive one 600-second extension, subject to an overall maximum of 1,800 seconds.
 
-\subsection{Retry Hierarchy}
+\subsection{Retry Hierarchy}\label{sec:D.3.2}
 
 Retries occur at several levels. A lower-level retry does not replace the clean-snapshot restore performed at the beginning of each full attempt.
 
@@ -459,7 +459,7 @@ Full collection attempt & 3 & Initial attempt plus two retries; each begins with
 \end{tabularx}
 \end{table}
 
-\section{Reproducibility Boundaries}
+\section{Reproducibility Boundaries}\label{sec:D.4}
 
 Snapshot restoration reduces persistent state between full attempts but does not by itself prove that cross-run contamination is impossible. The shared-folder check, target-directory validation, and per-attempt log removal provide additional safeguards. The random pre-attack delay is not reproducible unless the Python random-number generator is explicitly seeded.
 
@@ -467,13 +467,13 @@ The quality thresholds in this appendix are operational screening choices. No co
 
 
 % ---- Appendix E: f5a7503c-appendix_E_realtime_deployment.docx ----
-\chapter{Real-Time Deployment Implementation Specification}
+\chapter{Real-Time Deployment Implementation Specification}\label{app:E}
 
-This appendix documents the deployment implementation referenced in Section 3.8. It records the thread model, decision sequence, heuristic conditions, buffering behavior, response actions, and known reproducibility boundaries. The deployment path is supplementary to the LOFO evaluation: research metrics use a fixed probability threshold of 0.30, whereas the dashboard configuration uses the deployment decision sequence specified in Section E.3.
+This appendix documents the deployment implementation referenced in Section~\ref{sec:3.8}. It records the thread model, decision sequence, heuristic conditions, buffering behavior, response actions, and known reproducibility boundaries. The deployment path is supplementary to the LOFO evaluation: research metrics use a fixed probability threshold of 0.30, whereas the dashboard configuration uses the deployment decision sequence specified in Section~\ref{sec:E.3}.
 
-\section{Process Model and Thread Roles}
+\section{Process Model and Thread Roles}\label{sec:E.1}
 
-The dashboard implementation runs as one Python process. Its primary thread polls the BPF ring buffers, while three long-lived daemon threads perform inference, serve the web interface, and broadcast dashboard snapshots. Flask can create additional request-handler threads because the web server is started with threaded mode enabled; therefore, the four roles in Table E.1 describe the persistent pipeline roles rather than a strict upper bound on operating-system threads.
+The dashboard implementation runs as one Python process. Its primary thread polls the BPF ring buffers, while three long-lived daemon threads perform inference, serve the web interface, and broadcast dashboard snapshots. Flask can create additional request-handler threads because the web server is started with threaded mode enabled; therefore, the four roles in Table~\ref{tab:appe-1} describe the persistent pipeline roles rather than a strict upper bound on operating-system threads.
 
 \begin{table}[htbp]
 \centering
@@ -491,7 +491,7 @@ Dashboard broadcaster & Daemon thread & Serialize shared dashboard state and pub
 \end{tabularx}
 \end{table}
 
-\section{Inter-Thread Communication}
+\section{Inter-Thread Communication}\label{sec:E.2}
 
 The ring-buffer callback copies each file-I/\allowbreak{}O event into a plain Python tuple because the ctypes object returned by BCC is valid only during the callback. The tuple is inserted into a bounded queue without blocking. The inference worker consumes these copies and updates a shared DashboardState object. DashboardState serializes most state access through a lock before the web service or broadcaster creates a snapshot.
 
@@ -510,7 +510,7 @@ Per-client WebSocket queue & queue.Queue; maximum 50 snapshots & Dashboard broad
 \end{tabularx}
 \end{table}
 
-\section{Deployment Decision Sequence}
+\section{Deployment Decision Sequence}\label{sec:E.3}
 
 For each PID, two tokens are appended per accepted VFS event. A model chunk is processed after 100 events, equivalent to 200 tokens. The \textmu{}LSTM hidden state is carried between chunks belonging to the same PID. The dashboard configuration first requires the model probability to reach 0.85 on three consecutive chunks. Only after this sustained condition is met does the heuristic checker adjust the latest probability. An alert is emitted when the adjusted score is at least 0.85; otherwise, the process is marked as suppressed. A chunk below 0.85 resets the consecutive-chunk counter.
 
@@ -533,9 +533,9 @@ Research evaluation threshold & 0.30 & Used for LOFO MDR, MBD3, recall, and rela
 
 \noindent\textit{Dashboard status semantics.} ALERT requires alerted = true and suppressed = false. SUSPICIOUS identifies a process that is neither alerted nor suppressed and has at least one consecutive chunk at or above the initial probability gate; it does not mean that all three required chunks have been completed. SUPPRESSED reflects the heuristic-suppression flag, and NORMAL covers the remaining monitored processes.
 
-\subsection{Heuristic Conditions}
+\subsection{Heuristic Conditions}\label{sec:E.3.1}
 
-The heuristic checker implements eight conditions organized into six logical rules. The starting score is the latest \textmu{}LSTM probability. Table E.4 lists the conditions and score adjustments implemented in inference/\allowbreak{}heuristics.py.
+The heuristic checker implements eight conditions organized into six logical rules. The starting score is the latest \textmu{}LSTM probability. Table~\ref{tab:appe-4} lists the conditions and score adjustments implemented in inference/\allowbreak{}heuristics.py.
 
 \begin{table}[htbp]
 \centering
@@ -559,7 +559,7 @@ The heuristic checker implements eight conditions organized into six logical rul
 
 \noindent\textit{Note.} These rules were developed from the observed benign false-positive pool. Their reported effect is therefore an in-sample diagnostic result and does not establish false-positive suppression on previously unseen benign workloads.
 
-\section{Buffering, Back-Pressure, and PID Lifecycle}
+\section{Buffering, Back-Pressure, and PID Lifecycle}\label{sec:E.4}
 
 The dashboard configuration allocates a 32 MiB file-I/\allowbreak{}O BPF ring buffer shared across CPUs. The in-code fallback is 16 MiB when the configuration value is absent. Event delivery is nonblocking: a failed kernel submission increments a global per-CPU counter and a per-PID counter, while a full Python queue causes the callback to discard the copied event instead of waiting. This design prevents the monitoring process from intentionally blocking application I/\allowbreak{}O, but it permits event loss under load.
 
@@ -584,7 +584,7 @@ Confirmed alert & PID added to an in-process alerted set & Skips subsequent even
 
 \noindent\textit{Implementation limitation.} PIDStateManager accepts stale\_\allowbreak{}timeout = 120 seconds, but cleanup\_\allowbreak{}stale() does not currently apply elapsed inactivity against that value; it performs only the 30-second-gated /\allowbreak{}proc existence check. In addition, a full Python queue increments DashboardState.lost\_\allowbreak{}events, but the periodic status update later assigns the kernel drop total to the same field. Kernel and user-space queue losses are therefore not retained as independent cumulative counters.
 
-\section{Alert Actions and Shutdown}
+\section{Alert Actions and Shutdown}\label{sec:E.5}
 
 Every confirmed alert is appended to the JSON-lines alert log before the configured response is attempted. The available automatic actions are log only, SIGKILL, and quarantine, where quarantine means suspending the process with SIGSTOP for manual review. The deployment configuration selects quarantine and disables automatic filesystem snapshots. The dashboard also exposes manual kill and suspend endpoints with checks intended to protect selected system processes.
 
@@ -606,9 +606,9 @@ filesystem snapshot & Attempt Timeshift, Btrfs, or LVM snapshot before response;
 
 SIGINT or SIGTERM sets a shared exit flag. The primary poll loop and inference-worker loop test this flag, and the alert file is closed after the primary loop terminates. The worker, web-service, and broadcaster threads are daemons and are not explicitly joined. The event queue is also not drained during shutdown; consequently, shutdown should be described as signal-driven process termination rather than as a guarantee that every queued event is processed.
 
-\section{Deployment Variants and Reproducibility Boundaries}
+\section{Deployment Variants and Reproducibility Boundaries}\label{sec:E.6}
 
-The dashboard and standalone scripts share the sensor source, tokenizer, \textmu{}LSTM loader, PID-state class, and alert handler, but they do not implement identical decisions. Table E.7 records the relevant differences. Offline replay results in Chapter 4 are produced by dedicated replay and evaluation scripts rather than by the standalone live collector.
+The dashboard and standalone scripts share the sensor source, tokenizer, \textmu{}LSTM loader, PID-state class, and alert handler, but they do not implement identical decisions. Table~\ref{tab:appe-7} records the relevant differences. Offline replay results in Chapter~\ref{chap:4} are produced by dedicated replay and evaluation scripts rather than by the standalone live collector.
 
 \begin{table}[htbp]
 \centering
@@ -632,15 +632,15 @@ Auxiliary TCP-connect and UDP-port-53 telemetry is displayed by the dashboard bu
 
 
 % ---- Appendix F: acebdef4-appendix_F_supplementary_ablations.docx ----
-\chapter{Supplementary Inference and Tokenization Ablations}
+\chapter{Supplementary Inference and Tokenization Ablations}\label{app:F}
 
-This appendix reports five supplementary ablations that support the Chapter 4 interpretation without replacing the primary leave-one-family-out results. Sections F.2 and F.3 replay existing checkpoints to examine reporting frequency and decision aggregation. Sections F.4-F.6 retrain modified configurations to examine cross-chunk state, Token-2 auxiliary bits, and offset resolution. All reported detection decisions use the fixed Stage 1 threshold of 0.30. The experimental cohorts differ across ablations; consequently, comparisons should be interpreted within each table rather than pooled across tables.
+This appendix reports five supplementary ablations that support the Chapter~\ref{chap:4} interpretation without replacing the primary leave-one-family-out results. Sections F.2 and F.3 replay existing checkpoints to examine reporting frequency and decision aggregation. Sections F.4-F.6 retrain modified configurations to examine cross-chunk state, Token-2 auxiliary bits, and offset resolution. All reported detection decisions use the fixed Stage 1 threshold of 0.30. The experimental cohorts differ across ablations; consequently, comparisons should be interpreted within each table rather than pooled across tables.
 
-\section{Interpretation and Scope}
+\section{Interpretation and Scope}\label{sec:F.1}
 
 The replay experiments isolate inference-time choices while holding the relevant checkpoint fixed. The retraining ablations change one or more model-input or state-handling settings and therefore use separately trained checkpoints. Unless otherwise specified, the production tokenizer, chunk size of 100 events, and the frozen training configuration are retained. These experiments are diagnostic: they identify mechanisms within the evaluated folds but do not establish universal behavior across ransomware families or deployment environments.
 
-\section{Output-Frequency Ablation}
+\section{Output-Frequency Ablation}\label{sec:F.2}
 
 This replay compares a probability output after every event with an output after each 100-event chunk. For each model, both conditions use the same checkpoint and the same threshold. The sampled workload is bounded by 40 malware runs and 30 benign Parquet files where available, with at most 20,000 events per process and 50 processes per Parquet file. The random seed is 42. Because the filtering stage yields slightly different benign-process counts between the two conditions, the results are a diagnostic comparison rather than a paired estimate over identical process cohorts.
 
@@ -670,7 +670,7 @@ SougoLock & Per 100 events & 10 & 1,053 & 100.0 & N/\allowbreak{}A & 0.000 & 0.0
 
 MDR is unchanged within each model, but the operational trade-off is substantial. For the final checkpoint, per-event output reduces MBD3 from 1,887.1 KiB to 41.8 KiB, while the benign-process false-positive rate rises from 0.094\% to 2.762\% and throughput falls from 80,698 to 1,817 events/\allowbreak{}s. HelloKitty shows a similar MBD3 reduction, from 10,180.7 KiB to 859.6 KiB, with a higher false-positive rate. The comparison therefore supports 100-event reporting as the evaluated efficiency and false-positive trade-off; it does not show that reporting frequency is irrelevant to bytes-to-detection.
 
-\section{Decision-Aggregation Ablation}
+\section{Decision-Aggregation Ablation}\label{sec:F.3}
 
 This replay applies two aggregation rules to the same 100-event chunk-probability streams. Per-process scoring uses the maximum probability observed for a process, whereas per-chunk scoring treats each chunk as an independent decision unit. The sampled comparison uses at most 50 malware runs, 30 benign Parquet files, 50,000 events per process, and 60 processes per Parquet file. The threshold is 0.30.
 
@@ -696,7 +696,7 @@ SougoLock & 0.0000 & 0.0000 & 0.000 & 0.1565 & 0.000 & 1 \\
 
 The apparently high HelloKitty chunk F1 does not contradict the 20 missed malware processes. A small number of detected, long-running processes contributes many positive chunks, allowing chunk-level counts to dominate while process-level recall remains 65.517\%. Independent chunk decisions also create repeated operator-facing alerts: one benign HelloKitty process produces 216 positive chunks, and one benign Akira process produces 42. Per-process maximum scoring is therefore retained because it matches the process-level evaluation unit and consolidates repeated chunk scores into one decision per process.
 
-\section{Cross-Chunk Statefulness Ablation}
+\section{Cross-Chunk Statefulness Ablation}\label{sec:F.4}
 
 The statefulness ablation retrains all fourteen LOFO folds with the hidden state reset to zero at every chunk boundary. The baseline carries the hidden state across chunks belonging to the same process. Tokenization, per-process gradient accumulation, and the Stage 1 threshold remain unchanged.
 
@@ -729,9 +729,9 @@ Aggregate & - & - & 0.7274 & 0.6619 & 193 & 321 \\
 \end{adjustbox}
 \end{table}
 
-Resetting state recovers the Akira fold from MDR 16.79\% to 0.00\%, consistent with the log-spam dilution mechanism discussed in Section 4.5.1. This family-specific gain is accompanied by a broader cost: aggregate false positives rise from 193 to 321, a 66\% increase, and mean F1 decreases from 0.7274 to 0.6619. The stateful configuration is therefore retained for its lower aggregate false-positive count and higher mean F1. SougoLock remains at MDR 100\% in both conditions, indicating that removing cross-chunk state does not resolve that fold; the offset-specific diagnosis is tested separately in Section F.6.
+Resetting state recovers the Akira fold from MDR 16.79\% to 0.00\%, consistent with the log-spam dilution mechanism discussed in Section~\ref{sec:4.5.1}. This family-specific gain is accompanied by a broader cost: aggregate false positives rise from 193 to 321, a 66\% increase, and mean F1 decreases from 0.7274 to 0.6619. The stateful configuration is therefore retained for its lower aggregate false-positive count and higher mean F1. SougoLock remains at MDR 100\% in both conditions, indicating that removing cross-chunk state does not resolve that fold; the offset-specific diagnosis is tested separately in Section~\ref{sec:F.6}.
 
-\section{Token-2 Auxiliary-Bit Ablation}
+\section{Token-2 Auxiliary-Bit Ablation}\label{sec:F.5}
 
 This experiment retrains ten folds after forcing all three Token-2 auxiliary bits-RENAME, write-after-read (WaR), and read-after-read (RaR)-to zero. The ten selected families have baseline MDR of 0\%, making the test a targeted assessment of whether the auxiliary group is redundant when baseline detection is already complete. The four folds with nonzero baseline MDR are outside this diagnostic scope.
 
@@ -763,9 +763,9 @@ Nine families retain MDR 0\% and AUC of at least 0.999, although their F1 values
 
 A separate Guunra follow-up removes both the auxiliary group and the size field. All 29 Guunra processes remain detected (MDR 0\%, AUC 0.9997), while false positives increase from 9 under the no-aux condition to 19. Within this fold, opcode composition and activity volume are sufficient for recall, whereas size information contributes to precision. These findings support retaining the three auxiliary bits because their contribution is family dependent rather than uniformly redundant.
 
-\section{SougoLock Offset-Resolution Ablation}
+\section{SougoLock Offset-Resolution Ablation}\label{sec:F.6}
 
-The SougoLock diagnostic retrains five configurations on the same held-out-family fold containing 10 malware processes and 3,672 benign processes. All configurations use seed 42, a chunk size of 100 events, hidden size 64, and threshold 0.30. The baseline allocates six bits to offset at 4 KiB granularity, producing a 256 KiB repetition period. Configuration B reallocates six bits from delta-time, WaR, and RaR to provide a 12-bit offset at 256-byte granularity, producing a 1 MiB repetition period. Delta-time is a Token-1 temporal field; it is not one of the three Token-2 auxiliary bits defined in Section F.5.
+The SougoLock diagnostic retrains five configurations on the same held-out-family fold containing 10 malware processes and 3,672 benign processes. All configurations use seed 42, a chunk size of 100 events, hidden size 64, and threshold 0.30. The baseline allocates six bits to offset at 4 KiB granularity, producing a 256 KiB repetition period. Configuration B reallocates six bits from delta-time, WaR, and RaR to provide a 12-bit offset at 256-byte granularity, producing a 1 MiB repetition period. Delta-time is a Token-1 temporal field; it is not one of the three Token-2 auxiliary bits defined in Section~\ref{sec:F.5}.
 
 \begin{table}[htbp]
 \centering
