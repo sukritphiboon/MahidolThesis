@@ -26,6 +26,13 @@ Outputs, written next to the template:
 | `acknowledgements.tex` | the acknowledgements body |
 | `figures/figX-Y.png` | every embedded figure, extracted and named by its number |
 
+> **Note on layout.** `main-thematic-traditional.tex` is currently a single
+> self-contained file: the generated bodies have been inlined in place of the
+> `\input{...}` commands, so there are no separate `chapters.tex` /
+> `abstract.tex` / … files checked in. If you re-run the converter it will
+> recreate those standalone files; either paste their contents back into the
+> main file, or restore the `\input{chapters}` (etc.) lines to use them.
+
 It skips the title page, the embedded table of contents, the appendices (done
 separately), and the list of abbreviations — the class regenerates the first
 two. `CHAPTER I` + its title line become one `\chapter{}`; `1.2 Heading`
