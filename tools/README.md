@@ -8,6 +8,24 @@ Two scripts turn the Word sources into LaTeX for the `muthesis2026` template:
   table-rendering, and citation helpers are imported and reused by
   `docx2thesis.py`, so table styling and `\cite{refN}` numbering stay identical
   across the body and the appendices.
+- **`build_main.py`** — inlines the generated fragments into the single
+  `main-thematic-traditional.tex`.
+
+## Full rebuild
+
+```bash
+python3 tools/docx2thesis.py   thesis.docx
+python3 tools/docx2appendix.py appendix_*.docx -o appendices.tex
+python3 tools/build_main.py                 # inline the parts, delete fragments
+latexmk -pdf main-thematic-traditional.tex
+```
+
+`build_main.py` keeps everything above `\begin{document}` (document class,
+packages, `\title`, `\author`, `\input{preamble}`) from the existing main file,
+so hand-edited settings survive a rebuild. It emits the front matter in the
+order the template defines: `\acknowledgements`, `\abstract`,
+`\tableofcontents`, `\listoftables`, `\listoffigures`,
+`\listofabbreviations`. Pass `--keep-parts` to keep the fragment files.
 
 ## docx2thesis.py
 
@@ -26,12 +44,10 @@ Outputs, written next to the template:
 | `acknowledgements.tex` | the acknowledgements body |
 | `figures/figX-Y.png` | every embedded figure, extracted and named by its number |
 
-> **Note on layout.** `main-thematic-traditional.tex` is currently a single
-> self-contained file: the generated bodies have been inlined in place of the
-> `\input{...}` commands, so there are no separate `chapters.tex` /
-> `abstract.tex` / … files checked in. If you re-run the converter it will
-> recreate those standalone files; either paste their contents back into the
-> main file, or restore the `\input{chapters}` (etc.) lines to use them.
+> **Note on layout.** `main-thematic-traditional.tex` is a single
+> self-contained file — the generated bodies are inlined, so no `chapters.tex`
+> / `abstract.tex` / … files are checked in. Re-running a converter recreates
+> those fragments; **`build_main.py` then inlines them back** (see below).
 
 It skips the title page, the embedded table of contents, the appendices (done
 separately), and the list of abbreviations — the class regenerates the first

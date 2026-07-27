@@ -208,7 +208,17 @@ def render_table(rows, caption, label):
     content = [r for r in data if not _is_span_row(r)]
     numeric = table_columns_are_numeric([header] + content)
     data_maxlen = [max((len(r[c]) for r in content), default=0) for c in range(ncols)]
-    long_cols = [i for i, m in enumerate(data_maxlen) if m > 24]
+    # A column must be able to wrap if either its data or its heading is too
+    # wide: an unwrappable l/r column is sized by its widest cell, so wide
+    # content (e.g. "Malware-Labeled Events (Million)" over 3-digit numbers)
+    # pushes the whole table past the right margin. The limit adapts to the
+    # column count, since a line fits roughly 95 characters at \small and each
+    # column also costs about 3 characters of inter-column padding.
+    budget = max(40, 95 - 3 * ncols)
+    per_col = max(10, budget // ncols)
+    long_cols = [i for i in range(ncols)
+                 if data_maxlen[i] > min(24, per_col)
+                 or len(header[i]) > per_col]
 
     def cell(text, bold=False):
         out = render_text(text)
@@ -246,7 +256,7 @@ def render_table(rows, caption, label):
         parts = []
         for c in range(ncols):
             if c in long_cols:
-                parts.append("X")
+                parts.append("L")  # ragged-right X; defined in the preamble
             elif numeric[c]:
                 parts.append("r")
             else:

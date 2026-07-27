@@ -150,15 +150,18 @@ def convert(docx_path):
     i_ref = find(lambda b: h1_is(b, "REFERENCES"))
 
     meta = _metadata(allb, i_ack)
-    ack = _collect_bodytext(allb, i_ack + 1, i_abs)
+    ack = _collect_bodytext(allb, i_ack + 1, i_abs, meta.get("title", ""))
     abstract, keywords = _collect_abstract(allb, i_abs + 1, i_ch1)
     chapters = _emit_chapters(allb, i_ch1, i_ref, rid2file)
     refs = _emit_references(allb, i_ref)
+    abbrev = _collect_abbreviations(allb)
 
     _write("acknowledgements.tex", ack)
     _write("abstract.tex", abstract)
     _write("chapters.tex", chapters)
     _write("references.tex", refs)
+    if abbrev:
+        _write("abbreviations.tex", abbrev)
 
     print("=== METADATA (copy into preamble.tex / main-*.tex) ===")
     for k, v in meta.items():
@@ -173,26 +176,59 @@ def _write(name, text):
         f.write(text.rstrip() + "\n")
 
 
-def _collect_bodytext(allb, start, stop):
+# Lines that open the Word abstract page's header block (title, candidate,
+# degree, committee). The class regenerates all of that from preamble.tex, so
+# collection must stop there rather than copy it into the acknowledgements.
+_ABS_HEADER_RE = re.compile(
+    r"^(MR|MRS|MISS|MS)\.\s|ADVISORY COMMITTEE|^M\.(Sc|Eng|A)\.|^Ph\.D\.",
+    re.I)
+
+# Headings of the Word document's own front-matter lists. Everything from here
+# on is a table of contents / list of tables / list of figures that LaTeX
+# regenerates, so it must never be copied into the abstract.
+_FRONT_LIST_RE = re.compile(
+    r"^(CONTENTS|TABLE OF CONTENTS|LIST OF (TABLES|FIGURES|ABBREVIATIONS))$",
+    re.I)
+
+
+def _is_toc_style(b):
+    return isinstance(b, Paragraph) and b.style.name.lower().startswith("toc")
+
+
+def _letters(s):
+    return re.sub(r"[^A-Za-z0-9]", "", s).upper()
+
+
+def _collect_bodytext(allb, start, stop, title=""):
+    """Acknowledgements body, stopping before the abstract-page header block."""
+    # Compare on letters only and by prefix: the cover title and the
+    # abstract-page title often differ in punctuation or a trailing clause
+    # (e.g. the cover omits "& Prevention").
+    stem = _letters(title)[:25]
     out = []
     for b in allb[start:stop]:
-        if isinstance(b, Table):
+        if isinstance(b, Table) or _is_toc_style(b):
             continue
         t = b.text.strip()
         if not t or b.style.name.startswith("Heading"):
             continue
+        if (stem and _letters(t).startswith(stem)) or _ABS_HEADER_RE.search(t):
+            break
         out.append(render_text(t))
     return "\n\n".join(out)
 
 
 def _collect_abstract(allb, start, stop):
+    """Abstract body, stopping at the Word document's own contents listing."""
     paras, keywords = [], ""
     for b in allb[start:stop]:
-        if isinstance(b, Table):
+        if isinstance(b, Table) or _is_toc_style(b):
             continue
         t = b.text.strip()
         if not t or b.style.name.startswith("Heading"):
             continue
+        if _FRONT_LIST_RE.match(t):
+            break
         if t.lower().startswith("keywords"):
             keywords = t.split(":", 1)[1].strip() if ":" in t else ""
             continue
@@ -200,6 +236,25 @@ def _collect_abstract(allb, start, stop):
             continue
         paras.append(render_text(t))
     return "\n\n".join(paras), keywords
+
+
+def _collect_abbreviations(allb):
+    """Build the \\listofabbreviations tabbing body from the Word table."""
+    for i, b in enumerate(allb):
+        if (isinstance(b, Paragraph)
+                and b.text.strip().upper() == "LIST OF ABBREVIATIONS"):
+            for b2 in allb[i + 1:i + 6]:
+                if isinstance(b2, Table):
+                    lines = [r"\begin{tabbing}", r"\hspace{3cm}\=\kill"]
+                    for r in b2.rows:
+                        cells = [c.text.strip() for c in r.cells]
+                        if len(cells) < 2 or not cells[0]:
+                            continue
+                        lines.append("%s \\> %s \\\\"
+                                     % (escape(cells[0]), escape(cells[1])))
+                    lines.append(r"\end{tabbing}")
+                    return "\n".join(lines)
+    return ""
 
 
 def _metadata(allb, i_ack):

@@ -15,6 +15,9 @@
 \captionsetup{font={stretch=1.5}}
 \usepackage[flushleft]{threeparttable}
 \usepackage{tabularx}   % width-constrained tables (appendices)
+% Left-aligned auto-width column. Ragged-right avoids the wide inter-word gaps
+% and heavy hyphenation that justified text produces in narrow table columns.
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
 \usepackage{longtable}  % tables that break across pages (appendices)
 \usepackage{adjustbox}  % scale wide tables to \textwidth (appendices)
 
@@ -22,6 +25,15 @@
 \renewcommand{\@dotsep}{10000}
 \setlength{\@fptop}{0pt}
 \setlength{\@fpbot}{0pt plus 1fil}
+% natbib is loaded after the class and replaces its thebibliography, which
+% drops the class's \addcontentsline and leaves REFERENCES out of the table of
+% contents. Restore it through natbib's own \bibsection hook, so the entry is
+% recorded after \chapter* has started the new page (correct page number, and
+% no stray blank page).
+\renewcommand\bibsection{%
+  \chapter*{\bibname}%
+  \addcontentsline{toc}{chapter}{\MakeUppercase{\bibname}}%
+  \@mkboth{}{}}
 \makeatother
 
 \title{eBPF-based VFS Operations Ransomware Detection \& Prevention}
@@ -33,20 +45,10 @@
 \maketitle
 
 \linespacing{1.5}
-% Acknowledgements body: generated from the Word source (tools/docx2thesis.py).
-\acknowledgements{The author would like to express sincere gratitude to Dr. Ittipon Rassameeroj, Major Advisor, for his guidance, constructive feedback, and continued support throughout this research. Appreciation is also extended to Assoc. Prof. Vasaka Visoottiviseth and Dr. Assadarat Khurat, Co-advisors, for their valuable comments and academic guidance. The author is grateful to the Faculty of Information and Communication Technology, Mahidol University, for providing the academic environment and resources that supported this study. Finally, sincere thanks are offered to the author's family and colleagues for their encouragement and support.
-
-eBPF-BASED VFS OPERATIONS RANSOMWARE DETECTION \& PREVENTION
-
-MR. SUKRIT PHIBOON   6537732 ITCY/\allowbreak{}M
-
-M.Sc. (CYBER SECURITY AND INFORMATION ASSURANCE)
-
-THEMATIC PAPER ADVISORY COMMITTEE: Ittipon Rassameeroj, Ph.D., Vasaka Visoottiviseth, Ph.D., Assadarat Khurat, Dr.-Ing.}
+\acknowledgements{The author would like to express sincere gratitude to Dr. Ittipon Rassameeroj, Major Advisor, for his guidance, constructive feedback, and continued support throughout this research. Appreciation is also extended to Assoc. Prof. Vasaka Visoottiviseth and Dr. Assadarat Khurat, Co-advisors, for their valuable comments and academic guidance. The author is grateful to the Faculty of Information and Communication Technology, Mahidol University, for providing the academic environment and resources that supported this study. Finally, sincere thanks are offered to the author's family and colleagues for their encouragement and support.}
 
 \abstract{%
 \linespacing{1.2}
-% Abstract body: generated from the Word source (tools/docx2thesis.py).
 Ransomware poses an increasing threat to Linux-based servers and virtualized infrastructure, where a single successful encryption process can lead to operational disruption and data loss. Existing Linux ransomware detection approaches often rely on fixed-window feature aggregation or raw continuous features that may generalize poorly to unseen families and evasive partial-encryption behavior.
 
 This thematic paper investigates the feasibility of detecting Linux ransomware through real-time file I/\allowbreak{}O monitoring at the Virtual File System (VFS) layer using the extended Berkeley Packet Filter (eBPF). The prototype combines an eBPF-based VFS monitoring sensor, a compact representation that encodes each file I/\allowbreak{}O event as two 10-bit tokens, and a stateful micro-LSTM (\textmu{}LSTM) classifier for streaming sequence detection.
@@ -56,317 +58,49 @@ A quality-audited dataset of 682 labeled VFS-trace recordings was constructed ac
 Across the fourteen folds the mean AUC was 0.9752, with ten folds achieving a 0.0\% missed-detection rate (MDR) and eleven below 5\%. Three failure modes were identified --- SougoLock, HelloKitty, and Akira --- each traced to an identified cause. An in-sample heuristic layer reduced false positives from 193 to 4, a result that does not estimate performance on unseen benign workloads. These findings indicate that VFS-layer file I/\allowbreak{}O carries sufficient signal to detect most held-out families, while the identified failures delineate the boundary of what this monitoring layer can observe.
 
 This study contributes: (1) a VFS-level eBPF monitoring methodology and a multi-family labeled Linux ransomware dataset; (2) evidence that the VFS representation itself carries the detection signal; (3) a characterization of what VFS-layer monitoring can and cannot observe; and (4) a compact streaming detector evaluated under cross-family generalization.
-
-CONTENTS
-
-ACKNOWLEDGMENTS	iv
-
-ABSTRACT	v
-
-CHAPTER I	1
-
-INTRODUCTION	1
-
-1.1 Background and Motivation	1
-
-1.2  Problem Statement	3
-
-1.3  Research Objectives	4
-
-1.4  Research Questions	5
-
-1.5  Scope and Research Contributions	6
-
-1.6  Thesis Organization	8
-
-CHAPTER II	10
-
-BACKGROUND AND LITERATURE REVIEW	10
-
-2.1  Ransomware: Characteristics and Behavioral Taxonomy	10
-
-2.1.1  Definition and Threat Landscape	10
-
-2.1.2  Conceptual Ransomware Execution Lifecycle	11
-
-2.1.3  Encryption Strategies and Evasion	12
-
-2.2  eBPF for Kernel-Level Security Monitoring	13
-
-2.2.1  Overview of eBPF	13
-
-2.2.2  eBPF Hook Points and Event Sources	13
-
-2.2.3 VFS-Level Monitoring for File I/\allowbreak{}O Behavior	14
-
-2.2.4 Strengths and Constraints of eBPF Monitoring	14
-
-2.3  Machine Learning for Ransomware Detection	14
-
-2.3.1  Feature-Based and Storage-Layer Approaches	14
-
-2.3.2  Kernel-Level and eBPF-Based Detection	15
-
-2.3.3  Generalization and Deployment Challenges	16
-
-2.4  Datasets for Ransomware Research	19
-
-2.5  Research Gaps and Thesis Positioning	22
-
-CHAPTER III	24
-
-METHODOLOGY	24
-
-3.1  System Overview	24
-
-3.1.1  Design Goals and Requirements	24
-
-3.1.2  System Architecture Overview	25
-
-3.1.3  Design Rationale: Why eBPF at the VFS Layer	27
-
-3.1.4  Threat Model and Assumptions	28
-
-3.2  Data Collection	30
-
-3.2.1  Isolated Virtual Machine Environment	30
-
-3.2.2  eBPF Sensor Design	31
-
-3.2.3  Benign Workload Generator	32
-
-3.2.4  Automated Orchestration Pipeline	32
-
-3.2.5  CSV-to-Parquet Conversion and Labeling	33
-
-3.3  Dataset	34
-
-3.3.1  Ransomware Families	34
-
-3.3.2  Dataset Composition	36
-
-3.3.3  Labeling Methodology	37
-
-3.3.4  Data Quality Audit	39
-
-3.3.5  Class Imbalance	39
-
-3.3.6  Noise Filtering	41
-
-3.4  Tokenization Scheme	41
-
-3.4.1  10-bit Token Layout	41
-
-3.4.2  Effective Signal Analysis	44
-
-3.5  Model Architecture	44
-
-3.5.1  Stateful \textmu{}LSTM	44
-
-3.5.2  Truncated Backpropagation Through Time	45
-
-3.5.3  Hyperparameters	45
-
-3.6  Training Methodology	46
-
-3.6.1  Leave-One-Family-Out Protocol	46
-
-3.6.2  3-Way Data Split	48
-
-3.6.3  Loss Function and Class Weighting	48
-
-3.6.4  Early Stopping and Learning Rate Schedule	49
-
-3.7  Evaluation Methodology	49
-
-3.7.1  Primary Metrics	49
-
-3.7.2  Per-Family Evaluation	50
-
-3.8  Real-Time Deployment Prototype	50
-
-3.8.1  System Design	51
-
-3.8.2  3-Layer Detection Pipeline	51
-
-CHAPTER IV	54
-
-EXPERIMENTAL RESULTS	54
-
-4.1  Chapter Overview	54
-
-4.2  Evaluation Setup	54
-
-4.3  Leave-One-Family-Out (LOFO) Results	57
-
-4.4  Per-Family Analysis	60
-
-4.4.1  Behavioral Groups	60
-
-4.4.2  Early-Detection Traces	63
-
-4.5  Error Analysis	64
-
-4.5.1  Log-Spam Dilution (Akira 0ee1d284ed663073)	64
-
-4.5.2  Sensor Blind Spots (Guunra and Akira pwritev variants)	66
-
-4.5.3  Root Causes of Token-Representation Failures	68
-
-4.6 Heuristic False-Positive Suppression	69
-
-4.7  Production Model Configuration and Inference Microbenchmark	71
-
-4.8  Live-VM Validation	75
-
-4.8.1  Motivation and Test Environment	75
-
-4.8.2  Tests and Observations	75
-
-4.8.3  Mixed-Workload Resilience	77
-
-4.8.4  Limitations	78
-
-4.9  Aggregate-Feature Baseline Comparison and Threats to Validity	79
-
-4.10  Chapter Summary	81
-
-CHAPTER V	83
-
-CONCLUSION	83
-
-5.1  Summary of Findings and Answers to the Research Questions	83
-
-5.1.1  \textmu{}LSTM Classifier Detection	83
-
-5.1.2  False-Positive Reduction	84
-
-5.1.3  MBD3 and Data Loss Exposure	84
-
-5.1.4  Mixed-Workload Feasibility	84
-
-5.2  Comparison with the CLEAR Framework	85
-
-5.3  Limitations	85
-
-5.3.1  Dataset and Environment Scope	85
-
-5.3.2  Sensor Visibility and OpCode Coverage	86
-
-5.3.3  Metric Interpretation	86
-
-5.3.4  Limitations Identified in Live Deployment	86
-
-5.4  Future Work	86
-
-5.4.1  Expanded Family Coverage	86
-
-5.4.2  Production Deployment and Sensor Extensions	87
-
-5.5  Concluding Remarks	87
-
-REFERENCES	88
-
-Appendix~\ref{app:A} Malware Sample Catalog	93
-
-A.1  Sample-Acquisition Summary	93
-
-A.2  Binary Samples Included in the Evaluation Dataset	93
-
-A.3  Excluded Families	94
-
-A.4  Reproducibility Notes	94
-
-Appendix~\ref{app:B} Benign Workload Specification	96
-
-B.1  File-Pool Configuration	96
-
-B.2  Implemented Task Families	96
-
-B.3  Scheduling and Orchestrator Invocation	97
-
-B.4  Capture, Labeling, and Tokenization	97
-
-B.5  Scope and Reproducibility Limitations	98
-
-Appendix~\ref{app:C} Sensor, Tokenization, and Data-Conversion Specification	99
-
-C.1  Data-Collection Sensor Implementation	99
-
-C.1.1  Path Reconstruction and Filtering	99
-
-C.1.2  Buffering and Probe Attachment	100
-
-C.2  Event Tokenization	100
-
-C.2.1  Offset and Auxiliary-State Semantics	100
-
-C.2.2  Differences from CLEAR	100
-
-C.2.3  Post-Collection Noise Filter	101
-
-C.3  CSV-to-Parquet Conversion and Output Artifacts	101
-
-C.4  Reproducibility Boundaries	102
-
-Appendix~\ref{app:D} Run Orchestration and Data-Quality Audit Specification	103
-
-D.1  Quality-Control Stages	103
-
-D.2  Implemented Data-Quality Audit	103
-
-D.2.1  Recordings Excluded after Audit	104
-
-D.3  Orchestration Sequence and Timing	104
-
-D.3.1  Duration Caps	105
-
-D.3.2  Retry Hierarchy	105
-
-D.4  Reproducibility Boundaries	106
-
-Appendix~\ref{app:E} Real-Time Deployment Implementation Specification	107
-
-E.1  Process Model and Thread Roles	107
-
-E.2  Inter-Thread Communication	107
-
-E.3  Deployment Decision Sequence	108
-
-E.3.1  Heuristic Conditions	109
-
-E.4  Buffering, Back-Pressure, and PID Lifecycle	110
-
-E.5  Alert Actions and Shutdown	111
-
-E.6  Deployment Variants and Reproducibility Boundaries	111
-
-Appendix~\ref{app:F} Supplementary Inference and Tokenization Ablations	113
-
-F.1  Interpretation and Scope	113
-
-F.2  Output-Frequency Ablation	113
-
-F.3  Decision-Aggregation Ablation	114
-
-F.4  Cross-Chunk Statefulness Ablation	115
-
-F.5  Token-2 Auxiliary-Bit Ablation	116
-
-F.6  SougoLock Offset-Resolution Ablation	117
-
-LIST OF ABBREVIATIONS	118
-
-LIST OF TABLES
-
-LIST OF FIGURES
 }
 
 \tableofcontents
 \listoftables
 \listoffigures
+\listofabbreviations{
+\begin{tabbing}
+\hspace{3cm}\=\kill
+AUC \> Area Under the ROC Curve \\
+BCC \> BPF Compiler Collection \\
+CPU \> Central Processing Unit \\
+eBPF \> extended Berkeley Packet Filter \\
+ELF \> Executable and Linkable Format \\
+ETW \> Event Tracing for Windows \\
+FN \> False Negative \\
+FP \> False Positive \\
+FPR \> False Positive Rate \\
+IDS \> Intrusion Detection System \\
+I/\allowbreak{}O \> Input /\allowbreak{} Output \\
+LOFO \> Leave-One-Family-Out \\
+LSTM \> Long Short-Term Memory \\
+MBD3 \> MegaBytes to Detection, third quartile (75th percentile) \\
+MDR \> Missed Detection Rate \\
+ML \> Machine Learning \\
+NVMe \> Non-Volatile Memory Express \\
+PID \> Process Identifier \\
+RaR \> Read-after-Read \\
+RF \> Random Forest \\
+RNN \> Recurrent Neural Network \\
+ROC \> Receiver Operating Characteristic \\
+RSS \> Resident Set Size \\
+SHA-256 \> Secure Hash Algorithm, 256-bit \\
+SVM \> Support Vector Machine \\
+TBPTT \> Truncated Backpropagation Through Time \\
+TN \> True Negative \\
+TP \> True Positive \\
+VFS \> Virtual File System \\
+VM \> Virtual Machine \\
+WaR \> Write-after-Read \\
+\textmu{}LSTM \> micro-LSTM (compact Long Short-Term Memory) \\
+\end{tabbing}
+}
 
-% Chapters I-V, generated from the Word source by tools/docx2thesis.py.
 \chapter{Introduction}\label{chap:1}
 
 This chapter introduces the research problem, motivation, objectives, and scope of the thesis. It first outlines the background and practical significance of ransomware detection on Linux systems, then defines the key problems addressed in this work. The chapter next presents the research objectives, research questions, and principal contributions, and concludes with an overview of the organization of the thesis.
@@ -441,7 +175,7 @@ To make the structure of the research explicit, Table~\ref{tab:1-1} maps each re
 \centering
 \small
 \caption{Mapping of research objectives, research questions, and contributions.}\label{tab:1-1}
-\begin{tabularx}{\textwidth}{XlX}
+\begin{tabularx}{\textwidth}{LlL}
 \hline
 \textbf{Objective} & \textbf{Research Questions} & \textbf{Contributions} \\
 \hline
@@ -554,7 +288,7 @@ Adversarial robustness and concept drift are further deployment concerns \cite{r
 \centering
 \small
 \caption{Comparison of selected ransomware and malware detection systems.}\label{tab:2-1}
-\begin{tabularx}{\textwidth}{XllXllX}
+\begin{tabularx}{\textwidth}{LlLLLLL}
 \hline
 \textbf{System} & \textbf{OS} & \textbf{Sensor} & \textbf{ML Model} & \textbf{Stateful} & \textbf{Metrics} & \textbf{Key Limitation} \\
 \hline
@@ -585,7 +319,7 @@ Publicly available datasets have played a central role in advancing ransomware d
 \centering
 \small
 \caption{Comparison of ransomware research datasets.}\label{tab:2-2}
-\begin{tabularx}{\textwidth}{lrlXllll}
+\begin{tabularx}{\textwidth}{LrlLLLLL}
 \hline
 \textbf{Dataset} & \textbf{Year} & \textbf{Public} & \textbf{Family /\allowbreak{} variant coverage} & \textbf{OS} & \textbf{Sensor Layer} & \textbf{Event Labels} & \textbf{Mixed Workloads} \\
 \hline
@@ -667,7 +401,7 @@ Three candidate instrumentation layers were considered for kernel-level I/\allow
 \centering
 \small
 \caption{Comparison of kernel I/\allowbreak{}O monitoring layers.}\label{tab:3-1}
-\begin{tabularx}{\textwidth}{lllX}
+\begin{tabularx}{\textwidth}{llLL}
 \hline
 \textbf{Layer} & \textbf{Path Visibility} & \textbf{PID Attribution} & \textbf{Expected relative overhead} \\
 \hline
@@ -700,9 +434,9 @@ Victim files were organized into five sets (Set 1 - 5), each containing files fr
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{Victim file sets used for data collection.}\label{tab:3-2}
-\begin{adjustbox}{max width=\textwidth}
-\begin{tabular}{rrrll}
+\begin{tabularx}{\textwidth}{rrrlL}
 \hline
 \textbf{Set} & \textbf{Size (GB)} & \textbf{Files} & \textbf{Avg File Size} & \textbf{Sources} \\
 \hline
@@ -712,8 +446,7 @@ Victim files were organized into five sets (Set 1 - 5), each containing files fr
 4 & 73 & 170,170 & 430 KB & DiffusionDB \\
 5 & 30 & 70,314 & 430 KB & DiffusionDB + Synthetic \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 Before each data collection run, the VM was restored to a clean snapshot using VBoxManage, ensuring that (a) no residual encrypted files contaminated subsequent runs, and (b) the system state was identical across all experiments.
@@ -762,7 +495,7 @@ The evaluation set was assembled from a broader candidate pool of 63 Linux ELF r
 \centering
 \small
 \caption{Ransomware family characteristics.}\label{tab:3-3}
-\begin{tabularx}{\textwidth}{lrllrX}
+\begin{tabularx}{\textwidth}{lrLlLL}
 \hline
 \textbf{Family} & \textbf{Runs} & \textbf{Malware-Labeled Events (Million)} & \textbf{RENAME \%} & \textbf{Median Write (Byte)} & \textbf{Pattern} \\
 \hline
@@ -833,7 +566,7 @@ At the process level, any Process ID containing at least one Label = 1 event is 
 \centering
 \small
 \caption{Process counts by source partition.}\label{tab:3-4}
-\begin{tabularx}{\textwidth}{Xrrr}
+\begin{tabularx}{\textwidth}{Lrrr}
 \hline
 \textbf{Source partition} & \textbf{Processes} & \textbf{Benign} & \textbf{Malware} \\
 \hline
@@ -872,7 +605,7 @@ Each I/\allowbreak{}O event is encoded into two 10-bit tokens (VOCAB\_\allowbrea
 \centering
 \small
 \caption{10-bit token field definitions.}\label{tab:3-5}
-\begin{tabularx}{\textwidth}{llrX}
+\begin{tabularx}{\textwidth}{llrL}
 \hline
 \textbf{Token} & \textbf{Field} & \textbf{Bits} & \textbf{Encoding} \\
 \hline
@@ -924,7 +657,7 @@ Training employs Truncated Backpropagation Through Time (TBPTT) \cite{ref45} wit
 \centering
 \small
 \caption{Model hyperparameters.}\label{tab:3-6}
-\begin{tabularx}{\textwidth}{lXX}
+\begin{tabularx}{\textwidth}{lLL}
 \hline
 \textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
 \hline
@@ -1044,7 +777,7 @@ This part summarizes the experimental environment, the dataset partitions used f
 \centering
 \small
 \caption{Experimental hardware environments used for the reported results.}\label{tab:4-1}
-\begin{tabularx}{\textwidth}{lXX}
+\begin{tabularx}{\textwidth}{lLL}
 \hline
 \textbf{Environment} & \textbf{GPU configuration} & \textbf{Notes} \\
 \hline
@@ -1062,7 +795,7 @@ The fixed hyperparameter configuration used in all reported experiments is summa
 \centering
 \small
 \caption{Fixed hyperparameter set, frozen prior to all LOFO evaluations.}\label{tab:4-2}
-\begin{tabularx}{\textwidth}{llX}
+\begin{tabularx}{\textwidth}{llL}
 \hline
 \textbf{Hyperparameter} & \textbf{Value} & \textbf{Purpose} \\
 \hline
@@ -1191,10 +924,9 @@ The bimodal group contains families whose recordings exhibit two distinguishable
 
 \begin{table}[htbp]
 \centering
-\caption{Behavioral groups with per-family WaR/\allowbreak{}RaR frequencies and median write volume.}\label{tab:4-5}
-\begin{adjustbox}{max width=\textwidth}
 \small
-\begin{tabular}{llrlll}
+\caption{Behavioral groups with per-family WaR/\allowbreak{}RaR frequencies and median write volume.}\label{tab:4-5}
+\begin{tabularx}{\textwidth}{lLrllL}
 \hline
 \textbf{Family} & \textbf{Group} & \textbf{Runs} & \textbf{WaR (\%)} & \textbf{RaR (\%)} & \textbf{Bytes/\allowbreak{}run (median)} \\
 \hline
@@ -1213,8 +945,7 @@ RAWorld & Bimodal & 10 & 33.32 & 0.00 & 62.54 GB \\
 RansomEXX & Bimodal & 38 & 36.18 & 1.50 & 28.86 GB \\
 Royal & Bimodal & 20 & 28.80 & 0.00 & 77.13 GB \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 Note. WaR and RaR are reported as percentages of the corresponding VFS events. *Guunra produced no WRITE events through the instrumented hooks; the zero value does not indicate that no file modification occurred.
@@ -1253,7 +984,7 @@ The broad-cap retrain was correlational: capping every path at 100 events recove
 \centering
 \small
 \caption{Akira LOFO fold: three-way controlled ablation isolating the log-spam factor (Setup A).}\label{tab:4-6}
-\begin{tabularx}{\textwidth}{Xlllllrrrl}
+\begin{tabularx}{\textwidth}{Llllllrrrl}
 \hline
 \textbf{Configuration} & \textbf{MDR (\%)} & \textbf{AUC} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{TP} & \textbf{FN} & \textbf{FP} & \textbf{MBD3 (KiB)} \\
 \hline
@@ -1319,10 +1050,9 @@ The heuristic rule layer is evaluated here as an in-sample diagnostic on the obs
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{Heuristic ablation across the fourteen LOFO folds.}\label{tab:4-8}
-\begin{adjustbox}{max width=\textwidth}
-\footnotesize
-\begin{tabular}{lrrlrrll}
+\begin{tabularx}{\textwidth}{lrrlrLlL}
 \hline
 \textbf{Family} & \textbf{TP} & \textbf{FN} & \textbf{MDR (\%)} & \textbf{FP (S1)} & \textbf{FP (S2 opt)} & \textbf{F1 (S1)} & \textbf{F1 (S2 opt)} \\
 \hline
@@ -1342,8 +1072,7 @@ Sodinokibi & 22 & 1 & 4.35 & 17 & 0 & 0.710 & 0.978 \\
 SougoLock & 0 & 10 & 100.00 & 4 & 0 & 0.000 & 0.000 \\
 Aggregate & --- & --- & --- & 193 & 4 & 0.7274 & 0.9016 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 \section{Production Model Configuration and Inference Microbenchmark}\label{sec:4.7}
@@ -1354,7 +1083,7 @@ For the deployment measurements that follow, a separately trained prototype mode
 \centering
 \small
 \caption{Final deployment model: training configuration and in-training validation results.}\label{tab:4-9}
-\begin{tabularx}{\textwidth}{XX}
+\begin{tabularx}{\textwidth}{LL}
 \hline
 \textbf{Parameter} & \textbf{Value} \\
 \hline
@@ -1390,7 +1119,7 @@ Training ran the full ten-epoch budget; validation loss reached its minimum of 0
 \centering
 \small
 \caption{Isolated CPU inference microbenchmark on the Windows 11 development host.}\label{tab:4-10}
-\begin{tabularx}{\textwidth}{llX}
+\begin{tabularx}{\textwidth}{llL}
 \hline
 \textbf{Group} & \textbf{Parameter} & \textbf{Value} \\
 \hline
@@ -1431,7 +1160,7 @@ The five deployment and integration tests are summarized in Table~\ref{tab:4-11}
 \centering
 \small
 \caption{Summary of the five deployment and integration tests on Ubuntu 24.04.4 (kernel 6.17).}\label{tab:4-11}
-\begin{tabularx}{\textwidth}{lXlrX}
+\begin{tabularx}{\textwidth}{lLLrL}
 \hline
 \textbf{Test} & \textbf{Workload} & \textbf{Sensor capture} & \textbf{Alerts} & \textbf{Headline observation} \\
 \hline
@@ -1462,10 +1191,9 @@ A separate mixed-workload experiment evaluated a live BlackBasta binary under fo
 
 \begin{table}[htbp]
 \centering
-\caption{Mixed-workload resilience: BlackBasta (held-out) detection under four concurrent benign I/\allowbreak{}O levels.}\label{tab:4-12}
-\begin{adjustbox}{max width=\textwidth}
 \small
-\begin{tabular}{llllrrr}
+\caption{Mixed-workload resilience: BlackBasta (held-out) detection under four concurrent benign I/\allowbreak{}O levels.}\label{tab:4-12}
+\begin{tabularx}{\textwidth}{LllLLrr}
 \hline
 \textbf{I/\allowbreak{}O level} & \textbf{MDR} & \textbf{Detection} & \textbf{WRITE bytes at alert} & \textbf{Files at alert} & \textbf{FP} & \textbf{Dropped} \\
 \hline
@@ -1474,8 +1202,7 @@ Light (dd) & 0.0\% & 0.55 s & 136.1 KiB & 6 & 0 & 0 \\
 Medium (fio, 4 jobs) & 0.0\% & 0.57 s & 185.8 KiB & 19 & 0 & 0 \\
 Heavy (fio + find + cp) & 0.0\% & 0.41 s & 212.8 KiB & 6 & 0 & 0 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 Note. Detection is reported as the malware process event-time span at the alert (not wall-clock); the deployed alert configuration (\textmu{}LSTM threshold 0.85, sustained three chunks, then the heuristic filter) was used. Background fio load was time-based to the mounted data volume to preserve the event rate that stresses the ring buffer. Single run per load level on a fresh benign corpus.
@@ -1494,10 +1221,9 @@ The similar mean AUC values suggest that classifier sophistication was not the d
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{Aggregate-feature baselines and the \textmu{}LSTM under the fourteen-fold LOFO evaluation.}\label{tab:4-13}
-\begin{adjustbox}{max width=\textwidth}
-\footnotesize
-\begin{tabular}{lrlllllll}
+\begin{tabularx}{\textwidth}{lLLlllLLL}
 \hline
 \textbf{Family} & \textbf{Malware processes (n)} & \textbf{Write-vol AUC} & \textbf{RF AUC} & \textbf{SVM AUC} & \textbf{\textmu{}LSTM AUC} & \textbf{RF MDR at FPR $\le$ 1\% (\%)} & \textbf{SVM MDR at FPR $\le$ 1\% (\%)} & \textbf{\textmu{}LSTM MDR at FPR $\le$ 1\% (\%)} \\
 \hline
@@ -1517,8 +1243,7 @@ Sodinokibi & 23 & 0.987 & 0.978 & 1.000 & 0.991 & 4.3 & 4.3 & 4.3 \\
 SougoLock & 10 & 1 & 1 & 1.000 & 0.945 & 0 & 0 & 100 \\
 Mean &  & 0.9072 & 0.9980 & 0.9757 & 0.9752 & 2.77\% & 2.77\% & 9.92\% \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 Note. The unit in the second column is the number of eligible malware processes, not the number of execution runs. All models use the same held-out-family recording cohorts and the same eligible malware-process sets. The MDR columns are evaluated at a common operating point with a benign FPR of no more than 1\%. The \textmu{}LSTM values in these columns were recalculated from its process-level probabilities and are therefore distinct from the primary Stage 1 MDR values reported at the fixed threshold of 0.30 in Table~\ref{tab:4-4}. The comparison is observational because the aggregate-feature baselines and the \textmu{}LSTM differ in their state-maintenance, feature-availability, and stopping conditions.
@@ -1603,8 +1328,6 @@ This thematic paper demonstrates that selected Linux VFS events can provide usef
 
 The results remain conditional on the evaluated families, binaries, sensor hooks, thresholds, and experimental environment. The SougoLock, Akira, and HelloKitty analyses show that detection failures can result from representation resolution, sequence composition, process behavior, and sensor visibility. The study therefore supports the feasibility of CLEAR-inspired stateful sequence processing for Linux VFS monitoring while identifying the additional dataset diversity, sensor coverage, independent benign evaluation, and end-to-end deployment validation required before production effectiveness can be claimed.
 
-% References: numbered IEEE list generated by tools/docx2thesis.py.
-% Citations resolve as \cite{refN}; the same keys are used by the appendices.
 % Generated by tools/docx2thesis.py from the Word reference list.
 \begin{thebibliography}{999}
 \bibitem{ref1} IBM Security and Ponemon Institute, Cost of a Data Breach Report 2025. IBM Corp., 2025.
@@ -1660,7 +1383,6 @@ The results remain conditional on the evaluated families, binaries, sensor hooks
 \bibitem{ref51} N. Scaife, H. Carter, P. Traynor, and K. R. B. Butler, ``CryptoLock (and Drop It): Stopping Ransomware Attacks on User Data,'' in Proc. 36th IEEE Int. Conf. Distributed Computing Systems (ICDCS), 2016, pp. 303--312, doi: 10.1109/\allowbreak{}ICDCS.2016.46.
 \end{thebibliography}
 
-% Appendices A-F, generated from Word by tools/docx2appendix.py.
 % Generated by tools/docx2appendix.py -- do not edit by hand.
 % Regenerate with: python3 tools/docx2appendix.py <docx files> -o appendices.tex
 \appendices
@@ -1678,7 +1400,7 @@ The sample-acquisition process began with 30 candidate families comprising 63 Li
 \centering
 \small
 \caption{Summary of the sample-acquisition process.}\label{tab:appa-1}
-\begin{tabularx}{\textwidth}{Xrr}
+\begin{tabularx}{\textwidth}{Lrr}
 \hline
 \textbf{Sample-acquisition stage} & \textbf{Families} & \textbf{Binaries} \\
 \hline
@@ -1750,7 +1472,7 @@ The families below did not enter the evaluation dataset. Five were present in th
 \centering
 \small
 \caption{Families excluded from the evaluation dataset.}\label{tab:appa-3}
-\begin{tabularx}{\textwidth}{llX}
+\begin{tabularx}{\textwidth}{llL}
 \hline
 \textbf{Family} & \textbf{Selection stage} & \textbf{Reason for exclusion} \\
 \hline
@@ -1782,7 +1504,7 @@ The five set identifiers used in the evaluated dataset select combinations of Na
 \centering
 \small
 \caption{File-pool configuration used by the benign workload generator.}\label{tab:appb-1}
-\begin{tabularx}{\textwidth}{rXX}
+\begin{tabularx}{\textwidth}{rLL}
 \hline
 \textbf{Set ID} & \textbf{Pools included} & \textbf{Configured caps} \\
 \hline
@@ -1805,7 +1527,7 @@ The evaluated script implements seven task methods. On each loop iteration, one 
 \centering
 \small
 \caption{Task families implemented by the benign workload generator.}\label{tab:appb-2}
-\begin{tabularx}{\textwidth}{lXX}
+\begin{tabularx}{\textwidth}{lLL}
 \hline
 \textbf{Task family} & \textbf{Implementation} & \textbf{Expected VFS activity} \\
 \hline
@@ -1886,7 +1608,7 @@ Token2 = (1 \textless{}\textless{} 9) \textbar{} (offset\_\allowbreak{}msb \text
 \centering
 \small
 \caption{Bit allocation and implemented derivation for the two-token event representation.}\label{tab:appc-2}
-\begin{tabularx}{\textwidth}{llrX}
+\begin{tabularx}{\textwidth}{llrL}
 \hline
 \textbf{Token} & \textbf{Field} & \textbf{Bits} & \textbf{Implemented derivation} \\
 \hline
@@ -1916,7 +1638,7 @@ The prototype adapts CLEAR's command-token concept \cite{ref9} but does not repr
 \centering
 \small
 \caption{Tokenization differences between CLEAR and the prototype.}\label{tab:appc-3}
-\begin{tabularx}{\textwidth}{lXX}
+\begin{tabularx}{\textwidth}{lLL}
 \hline
 \textbf{Feature} & \textbf{CLEAR \cite{ref9}} & \textbf{Prototype} \\
 \hline
@@ -1937,17 +1659,16 @@ The post-collection filter removes events produced by wc, pgrep, ps, awk, top, a
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{Auxiliary-feature rates before and after the post-collection noise filter.}\label{tab:appc-4}
-\begin{adjustbox}{max width=\textwidth}
-\begin{tabular}{llll}
+\begin{tabularx}{\textwidth}{lllL}
 \hline
 \textbf{Rate} & \textbf{Before (\%)} & \textbf{After (\%)} & \textbf{Change (percentage points)} \\
 \hline
 WaR per event & 8.48 & 19.29 & +10.81 \\
 RaR per event & 10.53 & 19.93 & +9.40 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 \noindent\textit{Note.} These values aggregate existing overlap columns; they do not recompute overlaps. The increase is descriptive and partly reflects the smaller event denominator after filtering. It should not be interpreted as a causal estimate of detection improvement.
@@ -1962,7 +1683,7 @@ After timestamp normalization and path repair, event labels are assigned by case
 \centering
 \small
 \caption{Primary per-run output artifacts.}\label{tab:appc-5}
-\begin{tabularx}{\textwidth}{llX}
+\begin{tabularx}{\textwidth}{llL}
 \hline
 \textbf{Artifact} & \textbf{Format} & \textbf{Contents and purpose} \\
 \hline
@@ -1993,7 +1714,7 @@ Three quality-control mechanisms are applied to collected recordings. The runtim
 \centering
 \small
 \caption{Implemented quality-control stages and actions.}\label{tab:appd-1}
-\begin{tabularx}{\textwidth}{llXX}
+\begin{tabularx}{\textwidth}{LLLL}
 \hline
 \textbf{Stage} & \textbf{Timing} & \textbf{Implemented condition} & \textbf{Action} \\
 \hline
@@ -2014,7 +1735,7 @@ The audit reads only the Label and Path Name columns from each Parquet recording
 \centering
 \small
 \caption{Data-quality audit rules.}\label{tab:appd-2}
-\begin{tabularx}{\textwidth}{lXl}
+\begin{tabularx}{\textwidth}{lLl}
 \hline
 \textbf{Recording type} & \textbf{Condition} & \textbf{Verdict} \\
 \hline
@@ -2040,7 +1761,7 @@ The audit report identifies the two recordings in Table~\ref{tab:appd-3} as LOW\
 \centering
 \small
 \caption{Low-signal recordings excluded after audit.}\label{tab:appd-3}
-\begin{tabularx}{\textwidth}{XrrX}
+\begin{tabularx}{\textwidth}{LrrL}
 \hline
 \textbf{Recording} & \textbf{Malware events} & \textbf{Victim-path hits} & \textbf{Audit-supported reason} \\
 \hline
@@ -2060,7 +1781,7 @@ Each full attempt begins from a restored VirtualBox snapshot. The orchestrator t
 \centering
 \small
 \caption{Implemented orchestration sequence.}\label{tab:appd-4}
-\begin{tabularx}{\textwidth}{rXXX}
+\begin{tabularx}{\textwidth}{rLLL}
 \hline
 \textbf{Step} & \textbf{Operation} & \textbf{Timing or check} & \textbf{Failure handling} \\
 \hline
@@ -2110,7 +1831,7 @@ Retries occur at several levels. A lower-level retry does not replace the clean-
 \centering
 \small
 \caption{Retry limits used by the orchestrator.}\label{tab:appd-6}
-\begin{tabularx}{\textwidth}{XrX}
+\begin{tabularx}{\textwidth}{LrL}
 \hline
 \textbf{Operation} & \textbf{Maximum attempts} & \textbf{Implemented interval or timeout} \\
 \hline
@@ -2142,7 +1863,7 @@ The dashboard implementation runs as one Python process. Its primary thread poll
 \centering
 \small
 \caption{Persistent processing roles in the dashboard implementation.}\label{tab:appe-1}
-\begin{tabularx}{\textwidth}{llX}
+\begin{tabularx}{\textwidth}{llL}
 \hline
 \textbf{Role} & \textbf{Execution context} & \textbf{Implemented responsibility} \\
 \hline
@@ -2162,7 +1883,7 @@ The ring-buffer callback copies each file-I/\allowbreak{}O event into a plain Py
 \centering
 \small
 \caption{Principal communication channels.}\label{tab:appe-2}
-\begin{tabularx}{\textwidth}{XXXX}
+\begin{tabularx}{\textwidth}{LLLL}
 \hline
 \textbf{Channel} & \textbf{Type} & \textbf{Producer} & \textbf{Consumer} \\
 \hline
@@ -2181,7 +1902,7 @@ For each PID, two tokens are appended per accepted VFS event. A model chunk is p
 \centering
 \small
 \caption{Dashboard deployment parameters.}\label{tab:appe-3}
-\begin{tabularx}{\textwidth}{XlX}
+\begin{tabularx}{\textwidth}{LlL}
 \hline
 \textbf{Parameter} & \textbf{Configured value} & \textbf{Operational meaning} \\
 \hline
@@ -2204,7 +1925,7 @@ The heuristic checker implements eight conditions organized into six logical rul
 \centering
 \small
 \caption{Stage 2 heuristic conditions and score adjustments.}\label{tab:appe-4}
-\begin{tabularx}{\textwidth}{lXlX}
+\begin{tabularx}{\textwidth}{LLlL}
 \hline
 \textbf{Condition} & \textbf{Implemented test} & \textbf{Adjustment} & \textbf{Interpretation} \\
 \hline
@@ -2230,7 +1951,7 @@ The dashboard configuration allocates a 32 MiB file-I/\allowbreak{}O BPF ring bu
 \centering
 \small
 \caption{Resource bounds and lifecycle controls.}\label{tab:appe-5}
-\begin{tabularx}{\textwidth}{lXX}
+\begin{tabularx}{\textwidth}{lLL}
 \hline
 \textbf{Mechanism} & \textbf{Implemented bound or trigger} & \textbf{Effect} \\
 \hline
@@ -2255,7 +1976,7 @@ Every confirmed alert is appended to the JSON-lines alert log before the configu
 \centering
 \small
 \caption{Alert-handler response modes.}\label{tab:appe-6}
-\begin{tabularx}{\textwidth}{lXX}
+\begin{tabularx}{\textwidth}{lLL}
 \hline
 \textbf{Mode} & \textbf{Implemented action} & \textbf{Current deployment status} \\
 \hline
@@ -2277,7 +1998,7 @@ The dashboard and standalone scripts share the sensor source, tokenizer, \textmu
 \centering
 \small
 \caption{Dashboard and standalone live-collector differences.}\label{tab:appe-7}
-\begin{tabularx}{\textwidth}{XXX}
+\begin{tabularx}{\textwidth}{LLL}
 \hline
 \textbf{Feature} & \textbf{Dashboard path} & \textbf{Standalone path} \\
 \hline
@@ -2309,10 +2030,9 @@ This replay compares a probability output after every event with an output after
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{Per-event and per-chunk output-frequency comparison.}\label{tab:appf-1}
-\begin{adjustbox}{max width=\textwidth}
-\footnotesize
-\begin{tabular}{llrrllllr}
+\begin{tabularx}{\textwidth}{lLrrlLllr}
 \hline
 \textbf{Model} & \textbf{Reporting} & \textbf{nMW} & \textbf{nBN} & \textbf{MDR (\%)} & \textbf{MBD3 P75 (KiB)} & \textbf{FPR (\%)} & \textbf{ms/\allowbreak{}event} & \textbf{events/\allowbreak{}s} \\
 \hline
@@ -2325,8 +2045,7 @@ HelloKitty & Per 100 events & 58 & 1,038 & 34.483 & 10,180.7 & 0.385 & 0.0124 & 
 SougoLock & Per event & 10 & 1,047 & 100.0 & N/\allowbreak{}A & 3.343 & 0.5559 & 1,799 \\
 SougoLock & Per 100 events & 10 & 1,053 & 100.0 & N/\allowbreak{}A & 0.000 & 0.0141 & 71,066 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 \noindent\textit{Note.} MBD3 is the 75th percentile of cumulative WRITE bytes before first detection among detected malware processes. N/\allowbreak{}A indicates that no SougoLock process was detected. nMW and nBN denote malware and benign process counts, respectively.
@@ -2339,10 +2058,9 @@ This replay applies two aggregation rules to the same 100-event chunk-probabilit
 
 \begin{table}[htbp]
 \centering
-\caption{Per-process and per-chunk decision aggregation.}\label{tab:appf-2}
-\begin{adjustbox}{max width=\textwidth}
 \small
-\begin{tabular}{llllllr}
+\caption{Per-process and per-chunk decision aggregation.}\label{tab:appf-2}
+\begin{tabularx}{\textwidth}{lllLLLL}
 \hline
 \textbf{Model} & \textbf{Process F1} & \textbf{Chunk F1} & \textbf{Process TPR (\%)} & \textbf{Process FPR (\%)} & \textbf{Mean malware alerts/\allowbreak{}process} & \textbf{Maximum benign alerts/\allowbreak{}process} \\
 \hline
@@ -2351,8 +2069,7 @@ Akira & 0.8817 & 0.8850 & 82.000 & 0.1575 & 350.140 & 42 \\
 HelloKitty & 0.7600 & 0.9907 & 65.517 & 0.3098 & 327.586 & 216 \\
 SougoLock & 0.0000 & 0.0000 & 0.000 & 0.1565 & 0.000 & 1 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 \noindent\textit{Note.} Process F1 and chunk F1 use different statistical units and must not be compared as if they measured the same task. The alert counts show the number of threshold-positive chunks when every chunk is allowed to alert independently.
@@ -2365,10 +2082,9 @@ The statefulness ablation retrains all fourteen LOFO folds with the hidden state
 
 \begin{table}[htbp]
 \centering
-\caption{Stateful and hidden-state-reset LOFO results.}\label{tab:appf-3}
-\begin{adjustbox}{max width=\textwidth}
 \small
-\begin{tabular}{lllllrr}
+\caption{Stateful and hidden-state-reset LOFO results.}\label{tab:appf-3}
+\begin{tabularx}{\textwidth}{lLLLlLr}
 \hline
 \textbf{Family} & \textbf{MDR stateful (\%)} & \textbf{MDR reset (\%)} & \textbf{F1 stateful} & \textbf{F1 reset} & \textbf{FP stateful} & \textbf{FP reset} \\
 \hline
@@ -2388,8 +2104,7 @@ Sodinokibi & 4.35 & 4.35 & 0.7097 & 0.6471 & 17 & 23 \\
 SougoLock & 100.00 & 100.00 & 0.0000 & 0.0000 & 4 & 16 \\
 Aggregate & - & - & 0.7274 & 0.6619 & 193 & 321 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 Resetting state recovers the Akira fold from MDR 16.79\% to 0.00\%, consistent with the log-spam dilution mechanism discussed in Section~\ref{sec:4.5.1}. This family-specific gain is accompanied by a broader cost: aggregate false positives rise from 193 to 321, a 66\% increase, and mean F1 decreases from 0.7274 to 0.6619. The stateful configuration is therefore retained for its lower aggregate false-positive count and higher mean F1. SougoLock remains at MDR 100\% in both conditions, indicating that removing cross-chunk state does not resolve that fold; the offset-specific diagnosis is tested separately in Section~\ref{sec:F.6}.
@@ -2400,10 +2115,9 @@ This experiment retrains ten folds after forcing all three Token-2 auxiliary bit
 
 \begin{table}[htbp]
 \centering
-\caption{Auxiliary-bit ablation on the ten baseline-MDR-zero folds.}\label{tab:appf-4}
-\begin{adjustbox}{max width=\textwidth}
 \small
-\begin{tabular}{lllllll}
+\caption{Auxiliary-bit ablation on the ten baseline-MDR-zero folds.}\label{tab:appf-4}
+\begin{tabularx}{\textwidth}{lLLllll}
 \hline
 \textbf{Family} & \textbf{MDR base (\%)} & \textbf{MDR no-aux (\%)} & \textbf{AUC base} & \textbf{AUC no-aux} & \textbf{F1 base} & \textbf{F1 no-aux} \\
 \hline
@@ -2418,8 +2132,7 @@ RansomEXX & 0.00 & 0.00 & 1.0000 & 0.9999 & 0.8636 & 0.8352 \\
 RAWorld & 0.00 & 0.00 & 1.0000 & 0.9995 & 0.5263 & 0.8000 \\
 Royal & 0.00 & 0.00 & 1.0000 & 1.0000 & 0.7843 & 0.7273 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 Nine families retain MDR 0\% and AUC of at least 0.999, although their F1 values change because the false-positive counts also change. BlackBasta is the exception: MDR rises from 0\% to 89.74\%, AUC falls from 1.0000 to 0.8704, and F1 falls from 0.8571 to 0.1429. Because all three bits are removed together, this result establishes the importance of the auxiliary group for the BlackBasta fold but does not isolate WaR as the sole causal bit. The result is nevertheless consistent with the family's in-place read-modify-write pattern; a one-bit-at-a-time ablation would be required for individual attribution.
@@ -2432,10 +2145,9 @@ The SougoLock diagnostic retrains five configurations on the same held-out-famil
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{SougoLock five-configuration root-cause ablation.}\label{tab:appf-5}
-\begin{adjustbox}{max width=\textwidth}
-\footnotesize
-\begin{tabular}{llllllrl}
+\begin{tabularx}{\textwidth}{LLLlllrl}
 \hline
 \textbf{Configuration} & \textbf{Offset encoding} & \textbf{Other change or fields removed} & \textbf{MDR (\%)} & \textbf{AUC} & \textbf{TP/\allowbreak{}FN} & \textbf{FP} & \textbf{F1} \\
 \hline
@@ -2445,8 +2157,7 @@ B & 12-bit; 256 B & delta-time, WaR, RaR & 0.00 & 0.9990 & 10/\allowbreak{}0 & 2
 C & 6-bit; 4 KiB & delta-time & 100.00 & 0.7364 & 0/\allowbreak{}10 & 22 & 0.000 \\
 E & 6-bit; 4 KiB & delta-time, WaR, RaR & 100.00 & 0.9687 & 0/\allowbreak{}10 & 9 & 0.000 \\
 \hline
-\end{tabular}
-\end{adjustbox}
+\end{tabularx}
 \end{table}
 
 \noindent\textit{Note.} Configuration A changes WaR tracking semantics but retains the six-bit offset. Configurations B and E remove the same three fields and differ in offset bit count. Configuration B has MBD3 = 285.2 MB; Configuration A's single detection occurs after approximately 10.46 GB of cumulative writes.
