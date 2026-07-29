@@ -75,7 +75,11 @@
 % a small negative skip, which keeps its usual effect of not indenting the
 % paragraph that follows a heading; \addvspace takes the larger of the two
 % values, so the space is never applied twice.
-\newcommand\mu@headskip{\par\@nobreakfalse\addvspace{1.6\baselineskip}}
+% Right after a chapter title \if@nobreak is still true and the class has
+% already inserted its own 1.3cm (about two blank lines, which is what the
+% faculty's Word template specifies after a chapter heading), so adding the
+% heading skip there would stack the two. Skip it in that case.
+\newcommand\mu@headskip{\par\if@nobreak\else\addvspace{1.6\baselineskip}\fi}
 \renewcommand\section{%
   \mu@headskip
   \@startsection{section}{1}{\z@}%
