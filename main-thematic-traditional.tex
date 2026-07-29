@@ -47,6 +47,26 @@
 % the faculty's Word template (``1.1 Headings (1)''). LaTeX's default
 % \@seccntformat uses \quad, which leaves a visibly wider gap.
 \renewcommand\@seccntformat[1]{\csname the#1\endcsname\ }
+% Heading spacing is defined here rather than relied on from the class file,
+% so the vertical space above a heading is identical no matter which copy of
+% muthesis2026.cls a project happens to have. Values match the class: a section
+% is flush left, a subsection is indented by \parindent, and both are bold. The
+% negative "before" skips also stop the following paragraph from being indented.
+\renewcommand\section{%
+  \@startsection{section}{1}{\z@}%
+    {-8.5ex \@plus -1ex \@minus -.2ex}%
+    {1ex \@plus 4.7ex}%
+    {\normalfont\large\bfseries}}
+\renewcommand\subsection{%
+  \@startsection{subsection}{2}{\parindent}%
+    {-4.7ex \@plus -.2ex \@minus -.2ex}%
+    {0.1ex \@plus .1ex}%
+    {\normalfont\normalsize\bfseries}}
+\renewcommand\subsubsection{%
+  \@startsection{subsubsection}{3}{\parindent}%
+    {-1.3ex \@plus -.1ex \@minus -.1ex}%
+    {0.1ex \@plus .1ex}%
+    {\normalfont\normalsize}}
 \renewcommand*\l@table{\@dottedtocline{0}{0em}{2.8em}}
 \renewcommand*\l@figure{\@dottedtocline{0}{0em}{2.8em}}
 % Float placement. LaTeX's defaults are conservative: a table or figure is
