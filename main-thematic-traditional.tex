@@ -22,6 +22,8 @@
 % long heading such as ``Configuration'' overflows a narrow column.
 \newcolumntype{L}{>{\raggedright\arraybackslash\hspace{0pt}}X}
 \usepackage{longtable}  % tables that break across pages (appendices)
+\usepackage{xltabular}  % long AND width-constrained: breaks across pages
+                         % while still wrapping its X columns
 \usepackage{adjustbox}  % scale wide tables to \textwidth (appendices)
 
 \makeatletter
@@ -355,14 +357,20 @@ Kaya et al. \cite{ref15} expose a complementary challenge in general malware det
 
 Adversarial robustness and concept drift are further deployment concerns \cite{ref30}, \cite{ref31}: adversaries may adapt encryption strategies to evade learned behavioral signatures \cite{ref8}, and the shift toward selective or partial-file encryption (Section~\ref{sec:2.1.3}) is one such evolution. This thematic paper does not evaluate robustness against deliberate evasion; this is noted as a limitation and a direction for future work.
 
-\begin{table}[htbp]
-\centering
-\small
-\caption{Comparison of selected ransomware and malware detection systems.}\label{tab:2-1}
-\begin{tabularx}{\textwidth}{LlLLLLL}
+\begingroup\small
+\begin{xltabular}{\textwidth}{LlLLLLL}
+\caption{Comparison of selected ransomware and malware detection systems.}\label{tab:2-1}\\
 \hline
 \textbf{System} & \textbf{OS} & \textbf{Sensor} & \textbf{ML Model} & \textbf{Stateful} & \textbf{Metrics} & \textbf{Key Limitation} \\
 \hline
+\endfirsthead
+\multicolumn{7}{l}{\textit{(continued)}}\\
+\hline
+\textbf{System} & \textbf{OS} & \textbf{Sensor} & \textbf{ML Model} & \textbf{Stateful} & \textbf{Metrics} & \textbf{Key Limitation} \\
+\hline
+\endhead
+\hline
+\endfoot
 Hirano \& Kobayashi \cite{ref26} (2019) & Windows & Block I/O (hypervisor) & RF / SVM / KNN & No & F-measure & Block-layer; no file-path resolution \\
 Yang \& Sahita \cite{ref29} (2019) & Windows & I/O events + entropy & LSTM + SVM & LSTM: Yes; SVM: No & Acc, FPR & High FPR at deployment; Windows only \\
 Peeler \cite{ref14} (2021) & Windows & ETW kernel events & Rule-based + ML classifier & No & Acc, FPR & Windows ETW only; no Linux / eBPF \\
@@ -375,8 +383,8 @@ Minerva \cite{ref20} (2025) & Linux & File VFS & RF + entropy-based features & N
 RansoGuard \cite{ref21} (2025) & Windows & API call sequences & RNN & Yes & Recall, Acc & Pre-attack API only; Windows only \\
 This work (2026) & Linux & eBPF (VFS kprobes) & Stateful \textmu{}LSTM & Yes & MDR, MBD3 & VM-controlled environment; 14 families; single-machine \\
 \hline
-\end{tabularx}
-\end{table}
+\end{xltabular}
+\endgroup
 
 Note. Acc = accuracy; FPR = false-positive rate; TPR = true-positive rate; MDR = missed detection rate. In this thematic paper, MBD3 is defined as the 75th percentile of cumulative WRITE bytes observed before the first detection of each detected malware process. Metric definitions, sampling units, thresholds, and operating points differ across the cited studies; therefore, the entries summarize the metrics reported by each study and should not be interpreted as direct numerical comparisons.
 
