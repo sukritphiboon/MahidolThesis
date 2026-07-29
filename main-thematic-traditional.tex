@@ -17,7 +17,10 @@
 \usepackage{tabularx}   % width-constrained tables (appendices)
 % Left-aligned auto-width column. Ragged-right avoids the wide inter-word gaps
 % and heavy hyphenation that justified text produces in narrow table columns.
-\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+% \hspace{0pt} lets TeX hyphenate the first word of a cell: without it the
+% leading word sits after the cell's empty box and is never broken, so a
+% long heading such as ``Configuration'' overflows a narrow column.
+\newcolumntype{L}{>{\raggedright\arraybackslash\hspace{0pt}}X}
 \usepackage{longtable}  % tables that break across pages (appendices)
 \usepackage{adjustbox}  % scale wide tables to \textwidth (appendices)
 
@@ -53,6 +56,11 @@
 \setcounter{topnumber}{3}
 \setcounter{bottomnumber}{2}
 \setcounter{totalnumber}{4}
+% Let TeX stretch the spacing of a difficult paragraph rather than let a
+% line run past the right margin. Technical prose here contains long
+% unbreakable fragments (identifiers, inline formulas) that would otherwise
+% overflow.
+\setlength{\emergencystretch}{3em}
 \makeatother
 
 \title{eBPF-based VFS Operations Ransomware Detection \& Prevention}
@@ -70,11 +78,11 @@
 \linespacing{1.2}
 Ransomware poses an increasing threat to Linux-based servers and virtualized infrastructure, where a single successful encryption process can lead to operational disruption and data loss. Existing Linux ransomware detection approaches often rely on fixed-window feature aggregation or raw continuous features that may generalize poorly to unseen families and evasive partial-encryption behavior.
 
-This thematic paper investigates the feasibility of detecting Linux ransomware through real-time file I/\allowbreak{}O monitoring at the Virtual File System (VFS) layer using the extended Berkeley Packet Filter (eBPF). The prototype combines an eBPF-based VFS monitoring sensor, a compact representation that encodes each file I/\allowbreak{}O event as two 10-bit tokens, and a stateful micro-LSTM (\textmu{}LSTM) classifier for streaming sequence detection.
+This thematic paper investigates the feasibility of detecting Linux ransomware through real-time file I/O monitoring at the Virtual File System (VFS) layer using the extended Berkeley Packet Filter (eBPF). The prototype combines an eBPF-based VFS monitoring sensor, a compact representation that encodes each file I/O event as two 10-bit tokens, and a stateful micro-LSTM (\textmu{}LSTM) classifier for streaming sequence detection.
 
-A quality-audited dataset of 682 labeled VFS-trace recordings was constructed across fourteen ransomware families under ransomware-only, mixed-workload, and benign-only conditions, comprising approximately 598.6 million malware-labeled I/\allowbreak{}O events. Detection was evaluated under a leave-one-family-out (LOFO) protocol. Because nine of the fourteen families were represented by a single binary, their folds reduce to leave-one-binary-out evaluation; the results are therefore interpreted as held-out-family performance within the observed behavioral space rather than universal generalization.
+A quality-audited dataset of 682 labeled VFS-trace recordings was constructed across fourteen ransomware families under ransomware-only, mixed-workload, and benign-only conditions, comprising approximately 598.6 million malware-labeled I/O events. Detection was evaluated under a leave-one-family-out (LOFO) protocol. Because nine of the fourteen families were represented by a single binary, their folds reduce to leave-one-binary-out evaluation; the results are therefore interpreted as held-out-family performance within the observed behavioral space rather than universal generalization.
 
-Across the fourteen folds the mean AUC was 0.9752, with ten folds achieving a 0.0\% missed-detection rate (MDR) and eleven below 5\%. Three failure modes were identified --- SougoLock, HelloKitty, and Akira --- each traced to an identified cause. An in-sample heuristic layer reduced false positives from 193 to 4, a result that does not estimate performance on unseen benign workloads. These findings indicate that VFS-layer file I/\allowbreak{}O carries sufficient signal to detect most held-out families, while the identified failures delineate the boundary of what this monitoring layer can observe.
+Across the fourteen folds the mean AUC was 0.9752, with ten folds achieving a 0.0\% missed-detection rate (MDR) and eleven below 5\%. Three failure modes were identified --- SougoLock, HelloKitty, and Akira --- each traced to an identified cause. An in-sample heuristic layer reduced false positives from 193 to 4, a result that does not estimate performance on unseen benign workloads. These findings indicate that VFS-layer file I/O carries sufficient signal to detect most held-out families, while the identified failures delineate the boundary of what this monitoring layer can observe.
 
 This study contributes: (1) a VFS-level eBPF monitoring methodology and a multi-family labeled Linux ransomware dataset; (2) evidence that the VFS representation itself carries the detection signal; (3) a characterization of what VFS-layer monitoring can and cannot observe; and (4) a compact streaming detector evaluated under cross-family generalization.
 }
@@ -95,7 +103,7 @@ FN \> False Negative \\
 FP \> False Positive \\
 FPR \> False Positive Rate \\
 IDS \> Intrusion Detection System \\
-I/\allowbreak{}O \> Input /\allowbreak{} Output \\
+I/O \> Input / Output \\
 LOFO \> Leave-One-Family-Out \\
 LSTM \> Long Short-Term Memory \\
 MBD3 \> MegaBytes to Detection, third quartile (75th percentile) \\
@@ -130,19 +138,19 @@ Ransomware has emerged as one of the most destructive categories of malware conf
 
 Linux-based systems have become increasingly prominent ransomware targets \cite{ref2}. The widespread adoption of Linux in cloud infrastructure, enterprise servers, and virtualization platforms (particularly VMware ESXi hypervisors \cite{ref3}) has made it an attractive attack surface. Modern ransomware families such as Akira \cite{ref4}, BlackBasta \cite{ref5}, IceFire \cite{ref6}, and LockBit \cite{ref7} have developed Linux-specific variants engineered to target Linux filesystem semantics. Because Linux servers frequently host high-value data repositories, a single successful ransomware execution can encrypt terabytes of data within minutes, with potentially catastrophic consequences for business continuity.
 
-Existing ransomware detection approaches on Linux fall into two broad categories: signature-based detection and behavior-based detection. Signature-based methods rely on cryptographic hashes or byte-pattern matching and are rendered ineffective by minor code obfuscation or recompilation. Behavior-based methods analyze process activity patterns but many rely on user-space monitoring tools that introduce significant performance overhead, or require kernel module modifications that compromise compatibility with modern Linux kernels. Furthermore, most published detection systems were designed and evaluated against Windows ransomware behavior and do not generalize to Linux-specific encryption patterns. Detection approaches that rely on raw continuous features (such as absolute file sizes and wall-clock timestamps) are additionally susceptible to overfitting to the magnitude characteristics of known families and generalize poorly to novel strains whose I/\allowbreak{}O volume profiles differ significantly from training distributions. A candidate representation should therefore preserve relative behavioral patterns while reducing dependence on absolute magnitude.
+Existing ransomware detection approaches on Linux fall into two broad categories: signature-based detection and behavior-based detection. Signature-based methods rely on cryptographic hashes or byte-pattern matching and are rendered ineffective by minor code obfuscation or recompilation. Behavior-based methods analyze process activity patterns but many rely on user-space monitoring tools that introduce significant performance overhead, or require kernel module modifications that compromise compatibility with modern Linux kernels. Furthermore, most published detection systems were designed and evaluated against Windows ransomware behavior and do not generalize to Linux-specific encryption patterns. Detection approaches that rely on raw continuous features (such as absolute file sizes and wall-clock timestamps) are additionally susceptible to overfitting to the magnitude characteristics of known families and generalize poorly to novel strains whose I/O volume profiles differ significantly from training distributions. A candidate representation should therefore preserve relative behavioral patterns while reducing dependence on absolute magnitude.
 
-Ransomware families increasingly employ evasive encryption strategies, such as encrypting only partial regions of target files, that deliberately mimic the I/\allowbreak{}O patterns of legitimate workloads, causing volume-based and entropy-based detectors to fail \cite{ref15}. These behaviors motivate evaluating temporal I/\allowbreak{}O sequences alongside aggregate statistics rather than assuming that either representation is universally sufficient.
+Ransomware families increasingly employ evasive encryption strategies, such as encrypting only partial regions of target files, that deliberately mimic the I/O patterns of legitimate workloads, causing volume-based and entropy-based detectors to fail \cite{ref15}. These behaviors motivate evaluating temporal I/O sequences alongside aggregate statistics rather than assuming that either representation is universally sufficient.
 
-The extended Berkeley Packet Filter (eBPF) subsystem offers a compelling foundation for Linux security monitoring. eBPF programs execute in a sandboxed kernel environment with minimal processing overhead, providing access to file-system events at the Virtual File System (VFS) layer without requiring kernel modification or loadable module insertion \cite{ref10}. This enables real-time, per-process event capture with sub-microsecond timestamping precision (via the kernel's nanosecond-resolution clock), offering lower overhead than user-space audit frameworks such as auditd or inotify \cite{ref10}, \cite{ref11}, \cite{ref40}. Despite these advantages, systematic collection and analysis of VFS-level I/\allowbreak{}O behavioral traces across multiple ransomware families, and their use as training data for stateful sequence models, remains underexplored in the research literature.
+The extended Berkeley Packet Filter (eBPF) subsystem offers a compelling foundation for Linux security monitoring. eBPF programs execute in a sandboxed kernel environment with minimal processing overhead, providing access to file-system events at the Virtual File System (VFS) layer without requiring kernel modification or loadable module insertion \cite{ref10}. This enables real-time, per-process event capture with sub-microsecond timestamping precision (via the kernel's nanosecond-resolution clock), offering lower overhead than user-space audit frameworks such as auditd or inotify \cite{ref10}, \cite{ref11}, \cite{ref40}. Despite these advantages, systematic collection and analysis of VFS-level I/O behavioral traces across multiple ransomware families, and their use as training data for stateful sequence models, remains underexplored in the research literature.
 
-Certain in-place encryption implementations produce Write-after-Read (WaR) transitions, in which a process reads a byte range and subsequently writes to an overlapping range \cite{ref9}. The visibility of this pattern depends on the encryption implementation and the instrumented I/\allowbreak{}O path. WaR transitions also occur in legitimate workloads such as database compaction, log rotation, and software compilation; therefore, WaR is evaluated as one contextual sequence feature rather than as a universal indicator of ransomware.
+Certain in-place encryption implementations produce Write-after-Read (WaR) transitions, in which a process reads a byte range and subsequently writes to an overlapping range \cite{ref9}. The visibility of this pattern depends on the encryption implementation and the instrumented I/O path. WaR transitions also occur in legitimate workloads such as database compaction, log rotation, and software compilation; therefore, WaR is evaluated as one contextual sequence feature rather than as a universal indicator of ransomware.
 
 \section{Problem Statement}\label{sec:1.2}
 
 Despite significant research interest in ransomware detection, three fundamental problems remain inadequately addressed in the context of Linux system security:
 
-1) Evasive Encryption Strategies:  Modern ransomware families employ selective and partial-file encryption strategies specifically designed to evade I/\allowbreak{}O-volume-based detectors \cite{ref15}. Certain families encrypt only fixed-size partial regions of each file and deliberately avoid overwriting file headers, producing event streams that closely resemble legitimate database compaction or log-rotation workloads. These evasive patterns cause threshold-based and entropy-based detectors to fail \cite{ref13}, \cite{ref14}; moreover, adversarial manipulation of behavioral parameters such as thread count and encryption ratio can further degrade AI-based detection \cite{ref8}. Such evasion techniques simultaneously remain invisible to detectors that rely solely on aggregate write volume or file-count statistics.
+1) Evasive Encryption Strategies:  Modern ransomware families employ selective and partial-file encryption strategies specifically designed to evade I/O-volume-based detectors \cite{ref15}. Certain families encrypt only fixed-size partial regions of each file and deliberately avoid overwriting file headers, producing event streams that closely resemble legitimate database compaction or log-rotation workloads. These evasive patterns cause threshold-based and entropy-based detectors to fail \cite{ref13}, \cite{ref14}; moreover, adversarial manipulation of behavioral parameters such as thread count and encryption ratio can further degrade AI-based detection \cite{ref8}. Such evasion techniques simultaneously remain invisible to detectors that rely solely on aggregate write volume or file-count statistics.
 
 2) Lack of Stateful, Streaming Detection:  Ransomware behavior can evolve over time: an encryption campaign may begin slowly, accelerate, and then pause. Existing approaches commonly aggregate events into fixed-duration windows or extract static feature vectors from bounded event buffers \cite{ref16}. Resetting state between windows can alter sensitivity to behavior distributed across time, but the effect is behavior dependent. The ablation in Appendix~\ref{sec:F.4} found lower aggregate false positives and higher mean F1 with retained state, whereas resetting state improved Akira MDR. Cross-chunk state retention is therefore treated as an evaluated streaming design choice rather than as universally superior.
 
@@ -150,9 +158,9 @@ Despite significant research interest in ransomware detection, three fundamental
 
 \section{Research Objectives}\label{sec:1.3}
 
-The main objective of This thematic paper is to determine whether file I/\allowbreak{}O behavior captured at the Linux VFS layer using eBPF provides a sufficient signal for real-time ransomware detection that generalizes to previously unseen ransomware families. In support of this objective, the thesis pursues three sub-objectives:
+The main objective of this thematic paper is to determine whether file I/O behavior captured at the Linux VFS layer using eBPF provides a sufficient signal for real-time ransomware detection that generalizes to previously unseen ransomware families. In support of this objective, the thesis pursues three sub-objectives:
 
-(O1)	Design an eBPF-based detection system that captures file I/\allowbreak{}O behavior at the Linux VFS layer and classifies processes in real time.
+(O1)	Design an eBPF-based detection system that captures file I/O behavior at the Linux VFS layer and classifies processes in real time.
 
 (O2)	Evaluate whether a detector trained on known ransomware families generalizes to families withheld entirely from training.
 
@@ -162,27 +170,27 @@ The main objective of This thematic paper is to determine whether file I/\allowb
 
 The thesis is guided by the following research questions:
 
-(RQ1)	Can VFS-level file I/\allowbreak{}O operations serve as a sufficient behavioral signal for real-time ransomware detection on Linux?
+(RQ1)	Can VFS-level file I/O operations serve as a sufficient behavioral signal for real-time ransomware detection on Linux?
 
 (RQ2)	Does a ransomware detector trained on known families generalize to unseen families that employ different encryption strategies?
 
 (RQ3)	How much data must a ransomware process corrupt before a VFS-based detector can raise an alert, and how does this vary across families with different behavioral profiles?
 
-(RQ4)	Does a compact discrete tokenization of VFS I/\allowbreak{}O event streams capture sufficient behavioral signal to distinguish ransomware from benign processes without continuous feature normalization?
+(RQ4)	Does a compact discrete tokenization of VFS I/O event streams capture sufficient behavioral signal to distinguish ransomware from benign processes without continuous feature normalization?
 
 (RQ5)	To what extent can a two-stage detection pipeline (combining a streaming sequence classifier with a rule-assisted behavioral scoring stage) suppress false-positive alerts in a real-time deployment scenario, and what are its trade-offs with respect to missed detections?
 
 \section{Scope and Research Contributions}\label{sec:1.5}
 
-This research focuses on file-system ransomware targeting Linux server environments, using eBPF-based monitoring at the kernel VFS layer to capture real-time file I/\allowbreak{}O behavior across all active processes. The study encompasses fourteen Linux ransomware families, a purpose-built multi-family VFS I/\allowbreak{}O dataset, a compact event tokenization scheme, a stateful recurrent detection model, and a two-stage behavioral scoring pipeline, all evaluated under a rigorous cross-family generalization protocol. End-to-end live deployment is demonstrated as a proof-of-concept rather than as the primary evaluation; network-propagating ransomware variants (worms) and fileless ransomware that produce no file I/\allowbreak{}O are outside the scope of this study.
+This research focuses on file-system ransomware targeting Linux server environments, using eBPF-based monitoring at the kernel VFS layer to capture real-time file I/O behavior across all active processes. The study encompasses fourteen Linux ransomware families, a purpose-built multi-family VFS I/O dataset, a compact event tokenization scheme, a stateful recurrent detection model, and a two-stage behavioral scoring pipeline, all evaluated under a rigorous cross-family generalization protocol. End-to-end live deployment is demonstrated as a proof-of-concept rather than as the primary evaluation; network-propagating ransomware variants (worms) and fileless ransomware that produce no file I/O are outside the scope of this study.
 
-This thematic paper treats Linux ransomware detection primarily as a sensing problem rather than a modeling one. The guiding question is whether file-system behavior observable at a deployable kernel layer carries enough signal to flag an encrypting process early --- before meaningful data loss --- and at what coverage cost on a modern Linux I/\allowbreak{}O stack. The four contributions follow from that framing.
+This thematic paper treats Linux ransomware detection primarily as a sensing problem rather than a modeling one. The guiding question is whether file-system behavior observable at a deployable kernel layer carries enough signal to flag an encrypting process early --- before meaningful data loss --- and at what coverage cost on a modern Linux I/O stack. The four contributions follow from that framing.
 
-C1 --- A VFS-layer eBPF monitoring methodology and a multi-family Linux dataset. An eBPF sensor captures per-process read, write, and rename behavior at the Virtual File System layer using kprobes without requiring kernel modification; the evaluated deployment used the eBPF-related privileges described in Section~\ref{sec:3.1.1}. The sensor supported the systematic collection and quality audit of 682 Parquet recordings: 494 malware-session recordings across fourteen Linux ransomware families and 188 standalone benign-workload recordings. Direct counting of rows with Label = 1 in the malware-session recordings yielded approximately 598.6 million malware-labeled VFS I/\allowbreak{}O events. This infrastructure is the foundation on which the remaining contributions rest, and it directly addresses the absence of Linux-generated data noted by the CLEAR framework.
+C1 --- A VFS-layer eBPF monitoring methodology and a multi-family Linux dataset. An eBPF sensor captures per-process read, write, and rename behavior at the Virtual File System layer using kprobes without requiring kernel modification; the evaluated deployment used the eBPF-related privileges described in Section~\ref{sec:3.1.1}. The sensor supported the systematic collection and quality audit of 682 Parquet recordings: 494 malware-session recordings across fourteen Linux ransomware families and 188 standalone benign-workload recordings. Direct counting of rows with Label = 1 in the malware-session recordings yielded approximately 598.6 million malware-labeled VFS I/O events. This infrastructure is the foundation on which the remaining contributions rest, and it directly addresses the absence of Linux-generated data noted by the CLEAR framework.
 
 C2 --- Evidence of Discriminative Signal in the VFS Representation. The aggregate-feature baselines and the stateful \textmu{}LSTM achieved similar mean AUC values in the reported evaluation. However, differences in MDR indicate that the classifiers did not provide equivalent detection performance across all operational metrics. Furthermore, the comparison did not fully control the decision point, calibration procedure, stopping rule, and online memory requirements across the evaluated models. The results therefore suggest that the VFS representation carries strong discriminative signal and that classifier choice was not the dominant determinant of mean AUC in this experiment. They do not establish that the representation alone determines detection quality. The controlled SougoLock tokenization ablation provides additional evidence that insufficient representation resolution can cause detection failure, but this finding is limited to the evaluated fold and configuration.
 
-C3 --- A characterization of what VFS-layer detection can and cannot see. A data-driven analysis of the fourteen families' I/\allowbreak{}O fingerprints --- write-size distributions, RENAME rates, opcode-transition patterns, and throughput profiles --- separates them into encryption-dominant, rename-dominant, and bimodal behavioral groups. The same analysis maps the structural limits of the approach: log-spam dilution, tokenizer offset-resolution limits, and most consequentially the I/\allowbreak{}O paths (io\_\allowbreak{}uring, pwritev, O\_\allowbreak{}DIRECT) that bypass the VFS hooks and are already exercised by families within this dataset. This coverage boundary is treated as a finding about the monitoring layer, not merely a limitation of the prototype (Sections 4.5, 5.3).
+C3 --- A characterization of what VFS-layer detection can and cannot see. A data-driven analysis of the fourteen families' I/O fingerprints --- write-size distributions, RENAME rates, opcode-transition patterns, and throughput profiles --- separates them into encryption-dominant, rename-dominant, and bimodal behavioral groups. The same analysis maps the structural limits of the approach: log-spam dilution, tokenizer offset-resolution limits, and most consequentially the I/O paths (io\_\allowbreak{}uring, pwritev, O\_\allowbreak{}DIRECT) that bypass the VFS hooks and are already exercised by families within this dataset. This coverage boundary is treated as a finding about the monitoring layer, not merely a limitation of the prototype (Sections 4.5, 5.3).
 
 C4 --- A compact streaming detector and an evaluation calibrated to its evidence. As a deployability design point rather than an accuracy claim, the 182,849-parameter stateful \textmu{}LSTM consumes two 10-bit token IDs per accepted VFS event and maintains a fixed-size recurrent hidden state per process. Isolated model inference achieved sub-millisecond latency on the tested Windows CPU; this result supports a compact streaming design point but does not establish end-to-end continuous on-host performance. The detector is evaluated under a leave-one-family-out protocol with domain-specific metrics for missed detections and data exposure before the first alert. Results are reported separately for the five multi-binary folds, which test cross-family generalization in the intended sense, and the nine single-binary folds, for which the protocol reduces to a leave-one-binary-out experiment (Section~\ref{sec:4.3}), so the generalization claim is matched to what the dataset supports.
 
@@ -207,9 +215,9 @@ O3: Investigate false-positive suppression and its trade-offs through a two-stag
 
 \section{Thesis Organization}\label{sec:1.6}
 
-The remainder of This thematic paper is organized into four further chapters that progressively develop, evaluate, and reflect on the proposed Linux ransomware detection system.
+The remainder of this thematic paper is organized into four further chapters that progressively develop, evaluate, and reflect on the proposed Linux ransomware detection system.
 
-Chapter~\ref{chap:2} reviews the background and related literature. It presents the theoretical foundations of ransomware behavior and taxonomy, surveys eBPF kernel instrumentation and the Linux VFS subsystem, summarizes LSTM-based sequence modeling as it applies to system-call and I/\allowbreak{}O event streams, and positions the present work relative to existing behavior-based ransomware detection approaches.
+Chapter~\ref{chap:2} reviews the background and related literature. It presents the theoretical foundations of ransomware behavior and taxonomy, surveys eBPF kernel instrumentation and the Linux VFS subsystem, summarizes LSTM-based sequence modeling as it applies to system-call and I/O event streams, and positions the present work relative to existing behavior-based ransomware detection approaches.
 
 Chapter~\ref{chap:3} describes the methodology. It details the eBPF VFS sensor design, the dataset collection and quality-audit procedures, the two-token event encoding using 10-bit token IDs, the stateful \textmu{}LSTM architecture, the training regime based on Truncated Backpropagation Through Time (TBPTT), the two-stage behavioral scoring pipeline, and the evaluation metrics including the domain-specific Missed Detection Rate (MDR) and MBD3, defined as the 75th percentile of cumulative WRITE bytes before first detection among detected malware processes.
 
@@ -219,7 +227,7 @@ Chapter~\ref{chap:5} discusses the findings, limitations, and future work. It in
 
 \chapter{Background and Literature Review}\label{chap:2}
 
-This chapter reviews the background and prior work that motivate This thematic paper. It examines modern ransomware behavior, eBPF-based kernel monitoring at the VFS layer, and machine-learning approaches to ransomware detection, including the challenge of generalization across families and deployment environments. It also surveys relevant public datasets and concludes by identifying the research gaps addressed in This thematic paper and positioning the proposed approach within the existing literature.
+This chapter reviews the background and prior work that motivate this thematic paper. It examines modern ransomware behavior, eBPF-based kernel monitoring at the VFS layer, and machine-learning approaches to ransomware detection, including the challenge of generalization across families and deployment environments. It also surveys relevant public datasets and concludes by identifying the research gaps addressed in this thematic paper and positioning the proposed approach within the existing literature.
 
 \section{Ransomware: Characteristics and Behavioral Taxonomy}\label{sec:2.1}
 
@@ -235,9 +243,9 @@ The conceptual ransomware execution lifecycle on Linux is illustrated in Figure~
 
 The exact ordering and implementation of these phases vary across ransomware families \cite{ref2}, \cite{ref8}. During the reconnaissance stage, the malware identifies candidate files and directories for encryption, often prioritizing user documents, databases, and virtual machine images. This preparatory behavior is followed by cryptographic setup, in which the malware initializes the keys or key material required for subsequent encryption; however, the exact mechanism differs across families and may involve locally generated session keys, embedded public-key material, or external key exchange with attacker-controlled infrastructure \cite{ref2}, \cite{ref8}.
 
-The most operationally significant stage for This thematic paper is the encryption phase. At this stage, victim files are read, transformed, and written back either to the original path or to a new file that may subsequently be renamed with a family-specific extension. These operations produce observable VFS-level I/\allowbreak{}O activity, including characteristic sequences of read, write, and rename events, which form the primary behavioral signal exploited by the proposed detection system \cite{ref9}. After encryption, many families enter an extortion stage by dropping ransom notes or otherwise presenting user-facing extortion messages, after which the process either terminates or remains resident \cite{ref2}, \cite{ref8}.
+The most operationally significant stage for this thematic paper is the encryption phase. At this stage, victim files are read, transformed, and written back either to the original path or to a new file that may subsequently be renamed with a family-specific extension. These operations produce observable VFS-level I/O activity, including characteristic sequences of read, write, and rename events, which form the primary behavioral signal exploited by the proposed detection system \cite{ref9}. After encryption, many families enter an extortion stage by dropping ransom notes or otherwise presenting user-facing extortion messages, after which the process either terminates or remains resident \cite{ref2}, \cite{ref8}.
 
-From the perspective of kernel-level behavioral monitoring, these stages are not equally visible. Reconnaissance and extortion may generate relatively sparse or family-specific artifacts, whereas the encryption stage consistently produces the dense file I/\allowbreak{}O patterns most suitable for sequence-based detection. For this reason, the present thesis focuses on modeling the behavioral traces emitted during the encryption stage, while treating the broader lifecycle as contextual background for interpreting ransomware activity on Linux.
+From the perspective of kernel-level behavioral monitoring, these stages are not equally visible. Reconnaissance and extortion may generate relatively sparse or family-specific artifacts, whereas the encryption stage consistently produces the dense file I/O patterns most suitable for sequence-based detection. For this reason, the present thesis focuses on modeling the behavioral traces emitted during the encryption stage, while treating the broader lifecycle as contextual background for interpreting ransomware activity on Linux.
 
 \begin{figure}[htbp]
 \centering
@@ -247,7 +255,7 @@ From the perspective of kernel-level behavioral monitoring, these stages are not
 
 \subsection{Encryption Strategies and Evasion}\label{sec:2.1.3}
 
-Ransomware families differ substantially in their encryption strategies, and these differences produce distinct, measurable I/\allowbreak{}O signatures. The simplest approach is full-file overwrite, in which the ransomware reads each victim file, encrypts its entire content, and writes the ciphertext back to the same path, producing a symmetric READ--WRITE pair for every file. More evasive families employ selective or partial-file encryption, writing encrypted content only to specific file offsets while leaving other regions intact; this produces lower total write volume and may generate I/\allowbreak{}O patterns indistinguishable from those of legitimate application workloads, causing volume-based and entropy-based detectors to fail \cite{ref8}. A third pattern combines encryption with extension renaming, appending a family-specific suffix after writing, and produces a three-operation READ--WRITE--RENAME sequence per file. Families that perform rapid, high-volume renaming expose a particularly distinctive rename-rate signature. The specific write-size distributions, rename rates, and evasion characteristics of the fourteen families studied in this work are characterized empirically in Chapter~\ref{chap:4}, based on analysis of raw eBPF VFS traces.
+Ransomware families differ substantially in their encryption strategies, and these differences produce distinct, measurable I/O signatures. The simplest approach is full-file overwrite, in which the ransomware reads each victim file, encrypts its entire content, and writes the ciphertext back to the same path, producing a symmetric READ--WRITE pair for every file. More evasive families employ selective or partial-file encryption, writing encrypted content only to specific file offsets while leaving other regions intact; this produces lower total write volume and may generate I/O patterns indistinguishable from those of legitimate application workloads, causing volume-based and entropy-based detectors to fail \cite{ref8}. A third pattern combines encryption with extension renaming, appending a family-specific suffix after writing, and produces a three-operation READ--WRITE--RENAME sequence per file. Families that perform rapid, high-volume renaming expose a particularly distinctive rename-rate signature. The specific write-size distributions, rename rates, and evasion characteristics of the fourteen families studied in this work are characterized empirically in Chapter~\ref{chap:4}, based on analysis of raw eBPF VFS traces.
 
 \section{eBPF for Kernel-Level Security Monitoring}\label{sec:2.2}
 
@@ -265,35 +273,35 @@ The extended Berkeley Packet Filter (eBPF) executes user-supplied programs withi
 
 \subsection{eBPF Hook Points and Event Sources}\label{sec:2.2.2}
 
-Different kernel attachment points expose different views of file activity. System-call tracepoints capture user-space intent with clean process attribution but can be blinded by asynchronous or buffered I/\allowbreak{}O paths. Block-layer tracepoints expose physical storage operations but lose the link to the originating process, because kernel caching and request merging obscure the file-to-process mapping. The Virtual File System (VFS) layer sits between these extremes, observing logical file operations with full process context while remaining above block-layer caching effects (Figure~\ref{fig:2-2}).
+Different kernel attachment points expose different views of file activity. System-call tracepoints capture user-space intent with clean process attribution but can be blinded by asynchronous or buffered I/O paths. Block-layer tracepoints expose physical storage operations but lose the link to the originating process, because kernel caching and request merging obscure the file-to-process mapping. The Virtual File System (VFS) layer sits between these extremes, observing logical file operations with full process context while remaining above block-layer caching effects (Figure~\ref{fig:2-2}).
 
-\subsection{VFS-Level Monitoring for File I/\allowbreak{}O Behavior}\label{sec:2.2.3}
+\subsection{VFS-Level Monitoring for File I/O Behavior}\label{sec:2.2.3}
 
 In Linux, the VFS layer provides a uniform interception point for file operations across heterogeneous concrete file systems \cite{ref41}. Attaching eBPF kprobes to vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename yields per-event metadata---operation type, file path, size, offset, and timestamp---together with the identity of the issuing process. Preserving process-aware event ordering is advantageous for sequence-based detection, because temporal patterns may carry behavioral information that is lost when events are aggregated into summary statistics. This telemetry does not observe writes that bypass the VFS read and write path, such as memory-mapped writeback or io\_\allowbreak{}uring submissions, a coverage boundary examined in Section~\ref{sec:5.3}.
 
 \subsection{Strengths and Constraints of eBPF Monitoring}\label{sec:2.2.4}
 
-eBPF offers a practical middle ground between user-space monitoring and intrusive kernel modification, combining process-aware context with low overhead \cite{ref10}, \cite{ref11}. Two constraints bear directly on sensor design. First, every program must pass the kernel verifier, which restricts unbounded loops and unsafe memory access and thus limits in-kernel model complexity, motivating the user-space event-filtering and sequence-classification pipeline adopted in Chapter~\ref{chap:3}. Second, both ransomware and benign high-I/\allowbreak{}O workloads can saturate the kernel-to-user ring buffer, so throughput and event-loss behavior must be measured rather than assumed (Chapter~\ref{chap:4}).
+eBPF offers a practical middle ground between user-space monitoring and intrusive kernel modification, combining process-aware context with low overhead \cite{ref10}, \cite{ref11}. Two constraints bear directly on sensor design. First, every program must pass the kernel verifier, which restricts unbounded loops and unsafe memory access and thus limits in-kernel model complexity, motivating the user-space event-filtering and sequence-classification pipeline adopted in Chapter~\ref{chap:3}. Second, both ransomware and benign high-I/O workloads can saturate the kernel-to-user ring buffer, so throughput and event-loss behavior must be measured rather than assumed (Chapter~\ref{chap:4}).
 
 \section{Machine Learning for Ransomware Detection}\label{sec:2.3}
 
-This part reviews the main machine-learning approaches used for ransomware detection and highlights the issues most relevant to This thematic paper.
+This part reviews the main machine-learning approaches used for ransomware detection and highlights the issues most relevant to this thematic paper.
 
 \subsection{Feature-Based and Storage-Layer Approaches}\label{sec:2.3.1}
 
-Early machine learning approaches to ransomware detection relied on hand-crafted features extracted from file system events, block-level I/\allowbreak{}O logs, or system call traces. Yang and Sahita \cite{ref29} build a behavior-based deep learning detector for crypto-ransomware using I/\allowbreak{}O event patterns and file-content entropy as features, reporting approximately 98\% classification accuracy in controlled experiments but noting that naive models exhibit false-positive rates of approximately 1 -- 3\% in real-world deployment --- motivating adversarial evaluation and more robust feature design. Hirano and Kobayashi \cite{ref26} collect ransomware storage access patterns through a live-forensic hypervisor and train Random Forest, Support Vector Machine, and K-Nearest Neighbor classifiers on five hardware-level I/\allowbreak{}O features, achieving a 98\% F-measure. Gagulic et al. \cite{ref25} similarly explore ML classifiers applied to storage-layer I/\allowbreak{}O traces under the supervision of IBM Research Lab Zurich.
+Early machine learning approaches to ransomware detection relied on hand-crafted features extracted from file system events, block-level I/O logs, or system call traces. Yang and Sahita \cite{ref29} build a behavior-based deep learning detector for crypto-ransomware using I/O event patterns and file-content entropy as features, reporting approximately 98\% classification accuracy in controlled experiments but noting that naive models exhibit false-positive rates of approximately 1 -- 3\% in real-world deployment --- motivating adversarial evaluation and more robust feature design. Hirano and Kobayashi \cite{ref26} collect ransomware storage access patterns through a live-forensic hypervisor and train Random Forest, Support Vector Machine, and K-Nearest Neighbor classifiers on five hardware-level I/O features, achieving a 98\% F-measure. Gagulic et al. \cite{ref25} similarly explore ML classifiers applied to storage-layer I/O traces under the supervision of IBM Research Lab Zurich.
 
-While effective against known families, block-layer and storage-layer approaches share a fundamental limitation: they operate below the file-system abstraction boundary, where file-path resolution is unavailable. Without knowledge of which file is being modified, these approaches cannot filter irrelevant I/\allowbreak{}O or associate encryption activity with a specific process, limiting their applicability to fine-grained behavioral analysis in multi-tenant environments.
+While effective against known families, block-layer and storage-layer approaches share a fundamental limitation: they operate below the file-system abstraction boundary, where file-path resolution is unavailable. Without knowledge of which file is being modified, these approaches cannot filter irrelevant I/O or associate encryption activity with a specific process, limiting their applicability to fine-grained behavioral analysis in multi-tenant environments.
 
-A related line of work forgoes trained classifiers in favor of behavioral heuristics computed directly over file operations. Scaife et al. \cite{ref51} introduce CryptoDrop, an early-warning detection system that monitors read and write accesses to protected user directories and accumulates a per-process reputation score from indicators including content dissimilarity (measured via fuzzy hashing), Shannon entropy change, file-type funneling, and file deletion; evaluated against nearly 500 real-world ransomware samples, CryptoDrop detects 100\% of samples with a median loss of only 10 files. Because CryptoDrop reasons over per-process file operations rather than a trained statistical model, it generalizes to previously unseen families without retraining; however, like the storage-layer approaches discussed above, it evaluates each indicator independently at the point of file access rather than modeling the temporal sequence of operations, limiting its ability to distinguish early-stage ransomware behavior from bursty benign I/\allowbreak{}O.
+A related line of work forgoes trained classifiers in favor of behavioral heuristics computed directly over file operations. Scaife et al. \cite{ref51} introduce CryptoDrop, an early-warning detection system that monitors read and write accesses to protected user directories and accumulates a per-process reputation score from indicators including content dissimilarity (measured via fuzzy hashing), Shannon entropy change, file-type funneling, and file deletion; evaluated against nearly 500 real-world ransomware samples, CryptoDrop detects 100\% of samples with a median loss of only 10 files. Because CryptoDrop reasons over per-process file operations rather than a trained statistical model, it generalizes to previously unseen families without retraining; however, like the storage-layer approaches discussed above, it evaluates each indicator independently at the point of file access rather than modeling the temporal sequence of operations, limiting its ability to distinguish early-stage ransomware behavior from bursty benign I/O.
 
 \subsection{Kernel-Level and eBPF-Based Detection}\label{sec:2.3.2}
 
-Kernel-level monitoring provides richer behavioral context by observing I/\allowbreak{}O at the file-system abstraction layer, where both process identity and file path are available. Ahmed et al. \cite{ref14} propose Peeler, which profiles kernel-level events on Windows using the Event Tracing for Windows (ETW) framework. Evaluated against 43 distinct ransomware families --- the largest evaluation dataset at the time of publication --- Peeler achieves 99.52\% detection accuracy with a 0.58\% false-positive rate. Crypto-ransomware is detected within 115.3 milliseconds on average after only one file is encrypted, and transferability tests on 86 samples from 26 previously unseen families yield over 95\% accuracy, demonstrating meaningful cross-family generalization.
+Kernel-level monitoring provides richer behavioral context by observing I/O at the file-system abstraction layer, where both process identity and file path are available. Ahmed et al. \cite{ref14} propose Peeler, which profiles kernel-level events on Windows using the Event Tracing for Windows (ETW) framework. Evaluated against 43 distinct ransomware families --- the largest evaluation dataset at the time of publication --- Peeler achieves 99.52\% detection accuracy with a 0.58\% false-positive rate. Crypto-ransomware is detected within 115.3 milliseconds on average after only one file is encrypted, and transferability tests on 86 samples from 26 previously unseen families yield over 95\% accuracy, demonstrating meaningful cross-family generalization.
 
-On Linux, Brodzik et al. \cite{ref13} implement a decision tree and a multilayer perceptron directly inside eBPF programs, eliminating user-space inference latency. Willers and Philippart \cite{ref17} combine eBPF event capture with ML classification, achieving a 100\% true positive rate across 53 ransomware samples. Hitaj et al. \cite{ref20} propose Minerva, a file-based ransomware detector on Linux engineered for robustness against adversarial evasion, achieving over 99\% detection with 0.52-second average detection latency. van Sloun et al. \cite{ref24} address the practical overhead of kernel-level I/\allowbreak{}O monitoring by proposing a multi-staged detection pipeline that balances detection accuracy against monitoring cost, demonstrating that lightweight first-stage filtering can reduce overhead without sacrificing detection rates. Kostopoulos et al. \cite{ref18} and Kim et al. \cite{ref19} further demonstrate eBPF as a general-purpose security instrumentation platform, applying it to network intrusion detection and container cryptojacking detection respectively.
+On Linux, Brodzik et al. \cite{ref13} implement a decision tree and a multilayer perceptron directly inside eBPF programs, eliminating user-space inference latency. Willers and Philippart \cite{ref17} combine eBPF event capture with ML classification, achieving a 100\% true positive rate across 53 ransomware samples. Hitaj et al. \cite{ref20} propose Minerva, a file-based ransomware detector on Linux engineered for robustness against adversarial evasion, achieving over 99\% detection with 0.52-second average detection latency. van Sloun et al. \cite{ref24} address the practical overhead of kernel-level I/O monitoring by proposing a multi-staged detection pipeline that balances detection accuracy against monitoring cost, demonstrating that lightweight first-stage filtering can reduce overhead without sacrificing detection rates. Kostopoulos et al. \cite{ref18} and Kim et al. \cite{ref19} further demonstrate eBPF as a general-purpose security instrumentation platform, applying it to network intrusion detection and container cryptojacking detection respectively.
 
-Beyond kernel- and eBPF-specific systems, sequence-based neural architectures have proven effective for malware detection more broadly when applied directly to ordered event traces rather than aggregate statistics. Luo et al. \cite{ref32} encode Windows API call sequences as behavior graphs and process them with a single-bidirectional graph embedding combined with a Bi-LSTM network trained under a multi-task learning objective, reporting that preserving the temporal ordering of API calls yields higher detection accuracy than four comparison methods across two real-world malware datasets. This finding reinforces the design rationale adopted in This thematic paper: representing VFS-level I/\allowbreak{}O activity as an ordered token sequence, rather than collapsing it into per-process aggregate features, retains the fine-grained temporal signal needed to distinguish ransomware-specific I/\allowbreak{}O patterns from benign activity.
+Beyond kernel- and eBPF-specific systems, sequence-based neural architectures have proven effective for malware detection more broadly when applied directly to ordered event traces rather than aggregate statistics. Luo et al. \cite{ref32} encode Windows API call sequences as behavior graphs and process them with a single-bidirectional graph embedding combined with a Bi-LSTM network trained under a multi-task learning objective, reporting that preserving the temporal ordering of API calls yields higher detection accuracy than four comparison methods across two real-world malware datasets. This finding reinforces the design rationale adopted in this thematic paper: representing VFS-level I/O activity as an ordered token sequence, rather than collapsing it into per-process aggregate features, retains the fine-grained temporal signal needed to distinguish ransomware-specific I/O patterns from benign activity.
 
 \subsection{Generalization and Deployment Challenges}\label{sec:2.3.3}
 
@@ -311,13 +319,13 @@ Adversarial robustness and concept drift are further deployment concerns \cite{r
 \hline
 \textbf{System} & \textbf{OS} & \textbf{Sensor} & \textbf{ML Model} & \textbf{Stateful} & \textbf{Metrics} & \textbf{Key Limitation} \\
 \hline
-Hirano \& Kobayashi \cite{ref26} (2019) & Windows & Block I/\allowbreak{}O (hypervisor) & RF /\allowbreak{} SVM /\allowbreak{} KNN & No & F-measure & Block-layer; no file-path resolution \\
-Yang \& Sahita \cite{ref29} (2019) & Windows & I/\allowbreak{}O events + entropy & LSTM + SVM & LSTM: Yes; SVM: No & Acc, FPR & High FPR at deployment; Windows only \\
-Peeler \cite{ref14} (2021) & Windows & ETW kernel events & Rule-based + ML classifier & No & Acc, FPR & Windows ETW only; no Linux /\allowbreak{} eBPF \\
-Gagulic et al. \cite{ref25} (2023) & Any & Storage I/\allowbreak{}O & RF /\allowbreak{} ML classifier & No & Acc & Storage-layer only; Master project \\
-Brodzik et al. \cite{ref13} (2024) & Linux & eBPF syscalls & DT /\allowbreak{} MLP & No & Acc, latency & In-kernel ML; no sequence model \\
+Hirano \& Kobayashi \cite{ref26} (2019) & Windows & Block I/O (hypervisor) & RF / SVM / KNN & No & F-measure & Block-layer; no file-path resolution \\
+Yang \& Sahita \cite{ref29} (2019) & Windows & I/O events + entropy & LSTM + SVM & LSTM: Yes; SVM: No & Acc, FPR & High FPR at deployment; Windows only \\
+Peeler \cite{ref14} (2021) & Windows & ETW kernel events & Rule-based + ML classifier & No & Acc, FPR & Windows ETW only; no Linux / eBPF \\
+Gagulic et al. \cite{ref25} (2023) & Any & Storage I/O & RF / ML classifier & No & Acc & Storage-layer only; Master project \\
+Brodzik et al. \cite{ref13} (2024) & Linux & eBPF syscalls & DT / MLP & No & Acc, latency & In-kernel ML; no sequence model \\
 Willers \& Philippart \cite{ref17} (2024) & Linux & eBPF events & ML classifier & No & TPR & No sequence model; small sample set \\
-CLEAR \cite{ref9} (2025) & Windows & NVMe commands & \textmu{}LSTM /\allowbreak{} RF & \textmu{}LSTM: Yes; RF: No & MDR, MBD3 & Windows only; no LOFO evaluation \\
+CLEAR \cite{ref9} (2025) & Windows & NVMe commands & \textmu{}LSTM / RF & \textmu{}LSTM: Yes; RF: No & MDR, MBD3 & Windows only; no LOFO evaluation \\
 LARM \cite{ref33} (2025) & Linux & Syscall monitoring & ML classifier (multi-feature) & No & TPR, FPR & Fixed-window aggregation; no sequence model \\
 Minerva \cite{ref20} (2025) & Linux & File VFS & RF + entropy-based features & No & Acc, FPR & No sequence model; no LOFO \\
 RansoGuard \cite{ref21} (2025) & Windows & API call sequences & RNN & Yes & Recall, Acc & Pre-attack API only; Windows only \\
@@ -326,13 +334,13 @@ This work (2026) & Linux & eBPF (VFS kprobes) & Stateful \textmu{}LSTM & Yes & M
 \end{tabularx}
 \end{table}
 
-Note. Acc = accuracy; FPR = false-positive rate; TPR = true-positive rate; MDR = missed detection rate. In This thematic paper, MBD3 is defined as the 75th percentile of cumulative WRITE bytes observed before the first detection of each detected malware process. Metric definitions, sampling units, thresholds, and operating points differ across the cited studies; therefore, the entries summarize the metrics reported by each study and should not be interpreted as direct numerical comparisons.
+Note. Acc = accuracy; FPR = false-positive rate; TPR = true-positive rate; MDR = missed detection rate. In this thematic paper, MBD3 is defined as the 75th percentile of cumulative WRITE bytes observed before the first detection of each detected malware process. Metric definitions, sampling units, thresholds, and operating points differ across the cited studies; therefore, the entries summarize the metrics reported by each study and should not be interpreted as direct numerical comparisons.
 
 As shown in Table~\ref{tab:2-1}, prior work spans a wide range of operating systems, monitoring layers, and model families, from storage-level feature-based classifiers to kernel-level monitoring and recurrent sequence models. However, none of the Linux-based systems included in Table~\ref{tab:2-1} explicitly combines VFS-layer monitoring with a stateful sequence model for ransomware detection. This observation is limited to the systems reviewed in this chapter and does not establish the absence of comparable approaches outside the surveyed literature. This positioning motivates the approach adopted in the present thesis, which integrates eBPF-based VFS monitoring with compact event tokenization and stateful sequence classification under a cross-family evaluation setting.
 
 \section{Datasets for Ransomware Research}\label{sec:2.4}
 
-Publicly available datasets have played a central role in advancing ransomware detection research by providing reproducible experimental baselines. Table~\ref{tab:2-2} summarizes key existing datasets alongside the dataset constructed for This thematic paper, comparing them across dimensions relevant to sequence-based detection on Linux. Among the datasets included in this comparison, none provides the same combination of Linux-based VFS-level event streams, per-event labels, and mixed benign workloads. This observation is limited to the studies and datasets reviewed in this chapter and should not be interpreted as evidence that no comparable dataset exists outside the surveyed literature. These datasets differ primarily in sensor layer and platform (Table~\ref{tab:2-2}): hypervisor and NVMe captures (RanSAP \cite{ref22}, RanSMAP \cite{ref23}, Ma et al. \cite{ref36}, CLEAR \cite{ref9}) and block- or memory-level traces (DeftPunk \cite{ref34}, Zhu et al. \cite{ref35}) provide low-level I/\allowbreak{}O fidelity but sacrifice file-path resolution, while endpoint-resident monitors (Redemption \cite{ref38}, ShieldFS \cite{ref39}) log filesystem requests on Windows hosts. The dataset constructed for This thematic paper is collected via eBPF VFS kprobes, which yields per-process event streams with full file-path, byte offset, and transfer size at the cost of requiring controlled virtual machine execution environments. Among the surveyed datasets, only Higuchi and Kobayashi \cite{ref37} also adopt eBPF on Linux, although their dataset covers only five ransomware families and does not provide per-event command labels. In Table~\ref{tab:2-2}, the Public column uses three availability categories: Yes indicates an openly released dataset, Restricted indicates availability subject to stated access conditions, and No indicates that no public release was identified.
+Publicly available datasets have played a central role in advancing ransomware detection research by providing reproducible experimental baselines. Table~\ref{tab:2-2} summarizes key existing datasets alongside the dataset constructed for this thematic paper, comparing them across dimensions relevant to sequence-based detection on Linux. Among the datasets included in this comparison, none provides the same combination of Linux-based VFS-level event streams, per-event labels, and mixed benign workloads. This observation is limited to the studies and datasets reviewed in this chapter and should not be interpreted as evidence that no comparable dataset exists outside the surveyed literature. These datasets differ primarily in sensor layer and platform (Table~\ref{tab:2-2}): hypervisor and NVMe captures (RanSAP \cite{ref22}, RanSMAP \cite{ref23}, Ma et al. \cite{ref36}, CLEAR \cite{ref9}) and block- or memory-level traces (DeftPunk \cite{ref34}, Zhu et al. \cite{ref35}) provide low-level I/O fidelity but sacrifice file-path resolution, while endpoint-resident monitors (Redemption \cite{ref38}, ShieldFS \cite{ref39}) log filesystem requests on Windows hosts. The dataset constructed for this thematic paper is collected via eBPF VFS kprobes, which yields per-process event streams with full file-path, byte offset, and transfer size at the cost of requiring controlled virtual machine execution environments. Among the surveyed datasets, only Higuchi and Kobayashi \cite{ref37} also adopt eBPF on Linux, although their dataset covers only five ransomware families and does not provide per-event command labels. In Table~\ref{tab:2-2}, the Public column uses three availability categories: Yes indicates an openly released dataset, Restricted indicates availability subject to stated access conditions, and No indicates that no public release was identified.
 
 \begin{table}[htbp]
 \centering
@@ -340,16 +348,16 @@ Publicly available datasets have played a central role in advancing ransomware d
 \caption{Comparison of ransomware research datasets.}\label{tab:2-2}
 \begin{tabularx}{\textwidth}{LrlLLLLL}
 \hline
-\textbf{Dataset} & \textbf{Year} & \textbf{Public} & \textbf{Family /\allowbreak{} variant coverage} & \textbf{OS} & \textbf{Sensor Layer} & \textbf{Event Labels} & \textbf{Mixed Workloads} \\
+\textbf{Dataset} & \textbf{Year} & \textbf{Public} & \textbf{Family / variant coverage} & \textbf{OS} & \textbf{Sensor Layer} & \textbf{Event Labels} & \textbf{Mixed Workloads} \\
 \hline
-This work (2026) & 2026 & No & 14 families /\allowbreak{} 28 binaries & Linux & eBPF VFS (kprobe) & Yes & Yes \\
-CLEAR \cite{ref9} & 2025 & Yes & 47 families /\allowbreak{} 137 variants & Windows & NVMe commands & Yes & Yes \\
+This work (2026) & 2026 & No & 14 families / 28 binaries & Linux & eBPF VFS (kprobe) & Yes & Yes \\
+CLEAR \cite{ref9} & 2025 & Yes & 47 families / 137 variants & Windows & NVMe commands & Yes & Yes \\
 RanSMAP \cite{ref23} & 2025 & Yes & 6 families & Windows & Block + memory & No & Yes \\
 DeftPunk \cite{ref34} & 2024 & No & 13 families & Windows, Linux & Cloud memory & No & Yes \\
 Zhu et al. \cite{ref35} & 2024 & No & 10 families & Linux & Storage & No & Yes \\
 Ma et al. \cite{ref36} & 2023 & No & 32 families & Windows, Linux & Hypervisor + SSD & No & No \\
 Higuchi \& Kobayashi \cite{ref37} & 2023 & No & 5 families & Linux & eBPF & No & No \\
-RanSAP \cite{ref22} & 2022 & Yes & 7 families & Windows & Block /\allowbreak{} hypervisor & No & No \\
+RanSAP \cite{ref22} & 2022 & Yes & 7 families & Windows & Block / hypervisor & No & No \\
 Redemption \cite{ref38} & 2017 & No & 29 families & Windows & Endpoint & No & No \\
 ShieldFS \cite{ref39} & 2016 & Restricted & 11 families & Windows & IRP (filesystem) & No & Yes \\
 \hline
@@ -362,19 +370,19 @@ Because these traces are collected in virtual machines rather than on production
 
 \section{Research Gaps and Thesis Positioning}\label{sec:2.5}
 
-The preceding review identifies three research gaps that motivate the design and evaluation of This thematic paper.
+The preceding review identifies three research gaps that motivate the design and evaluation of this thematic paper.
 
-The first gap concerns the limited integration of Linux eBPF-based VFS-level monitoring with stateful sequence classification. Existing Linux-based ransomware detection systems have demonstrated the practicality of eBPF for runtime monitoring, but they mainly rely on rule-based logic, trap-file monitoring, fixed-window features, or conventional machine-learning models rather than stateful sequence modeling \cite{ref10}, \cite{ref11}, \cite{ref13}, \cite{ref17}. In contrast, storage-oriented ransomware studies provide useful low-level I/\allowbreak{}O evidence, but many operate below the file-system abstraction layer, where file-path context and direct process-level semantics are less available \cite{ref22}, \cite{ref23}, \cite{ref25}, \cite{ref26}. Windows-based systems and CLEAR-style approaches show the value of fine-grained monitoring and stateful modeling \cite{ref9}, \cite{ref14}, but they cannot be directly transferred to Linux because the instrumentation mechanisms and file-system semantics differ across platforms. In Linux, VFS-level monitoring introduces specific technical challenges, including dentry-based path reconstruction, preserving correct process and file-path association at kernel hooks, and handling file-system-specific I/\allowbreak{}O behavior such as ext4 journaling or Btrfs copy-on-write. This thematic paper addresses this gap by combining eBPF VFS-level kprobes with a stateful \textmu{}LSTM classifier, as described in Chapter~\ref{chap:3}.
+The first gap concerns the limited integration of Linux eBPF-based VFS-level monitoring with stateful sequence classification. Existing Linux-based ransomware detection systems have demonstrated the practicality of eBPF for runtime monitoring, but they mainly rely on rule-based logic, trap-file monitoring, fixed-window features, or conventional machine-learning models rather than stateful sequence modeling \cite{ref10}, \cite{ref11}, \cite{ref13}, \cite{ref17}. In contrast, storage-oriented ransomware studies provide useful low-level I/O evidence, but many operate below the file-system abstraction layer, where file-path context and direct process-level semantics are less available \cite{ref22}, \cite{ref23}, \cite{ref25}, \cite{ref26}. Windows-based systems and CLEAR-style approaches show the value of fine-grained monitoring and stateful modeling \cite{ref9}, \cite{ref14}, but they cannot be directly transferred to Linux because the instrumentation mechanisms and file-system semantics differ across platforms. In Linux, VFS-level monitoring introduces specific technical challenges, including dentry-based path reconstruction, preserving correct process and file-path association at kernel hooks, and handling file-system-specific I/O behavior such as ext4 journaling or Btrfs copy-on-write. This thematic paper addresses this gap by combining eBPF VFS-level kprobes with a stateful \textmu{}LSTM classifier, as described in Chapter~\ref{chap:3}.
 
-The second gap concerns generalization evaluation for sequence-based ransomware detection on Linux kernel-level I/\allowbreak{}O traces. Prior studies have shown that ransomware detection models may not generalize reliably across configurations, environments, or deployment settings \cite{ref12}, \cite{ref15}. However, to the best of the author's knowledge, leave-one-family-out (LOFO) evaluation has not been sufficiently explored for sequence classifiers trained on Linux eBPF VFS-level traces. This is important because a detector that performs well on known ransomware families may still fail when exposed to an unseen family with different encryption behavior. This thematic paper addresses this gap through a fourteen-family LOFO evaluation, presented in Chapter~\ref{chap:4}.
+The second gap concerns generalization evaluation for sequence-based ransomware detection on Linux kernel-level I/O traces. Prior studies have shown that ransomware detection models may not generalize reliably across configurations, environments, or deployment settings \cite{ref12}, \cite{ref15}. However, to the best of the author's knowledge, leave-one-family-out (LOFO) evaluation has not been sufficiently explored for sequence classifiers trained on Linux eBPF VFS-level traces. This is important because a detector that performs well on known ransomware families may still fail when exposed to an unseen family with different encryption behavior. This thematic paper addresses this gap through a fourteen-family LOFO evaluation, presented in Chapter~\ref{chap:4}.
 
-The third gap concerns the empirical characterization of selective encryption evasion from raw Linux VFS-level I/\allowbreak{}O traces. Hirano and Kobayashi \cite{ref8} demonstrate that adversarial manipulation of encryption parameters can degrade ransomware detection. However, there remains limited empirical characterization of such behavior using Linux VFS-level traces with file-path context and byte-granularity write-size information. This thematic paper addresses this gap by analyzing selective-encryption behavior across fourteen ransomware families and characterizing how such behavior appears in raw VFS-level I/\allowbreak{}O traces, as discussed in Chapter~\ref{chap:4}.
+The third gap concerns the empirical characterization of selective encryption evasion from raw Linux VFS-level I/O traces. Hirano and Kobayashi \cite{ref8} demonstrate that adversarial manipulation of encryption parameters can degrade ransomware detection. However, there remains limited empirical characterization of such behavior using Linux VFS-level traces with file-path context and byte-granularity write-size information. This thematic paper addresses this gap by analyzing selective-encryption behavior across fourteen ransomware families and characterizing how such behavior appears in raw VFS-level I/O traces, as discussed in Chapter~\ref{chap:4}.
 
-Together, these gaps define the positioning of This thematic paper. Existing studies demonstrate the value of eBPF, kernel-level monitoring, storage I/\allowbreak{}O analysis, and sequence modeling, but these directions have rarely been combined into a Linux VFS-level ransomware detection pipeline. This thematic paper therefore focuses on collecting process-aware VFS-level I/\allowbreak{}O events with eBPF, representing them as ordered behavioral sequences, and evaluating their effectiveness under family-level generalization and selective-encryption analysis. Chapter~\ref{chap:3} presents the system architecture that implements this design, while Chapter~\ref{chap:4} presents the experimental evaluation.
+Together, these gaps define the positioning of this thematic paper. Existing studies demonstrate the value of eBPF, kernel-level monitoring, storage I/O analysis, and sequence modeling, but these directions have rarely been combined into a Linux VFS-level ransomware detection pipeline. This thematic paper therefore focuses on collecting process-aware VFS-level I/O events with eBPF, representing them as ordered behavioral sequences, and evaluating their effectiveness under family-level generalization and selective-encryption analysis. Chapter~\ref{chap:3} presents the system architecture that implements this design, while Chapter~\ref{chap:4} presents the experimental evaluation.
 
 \chapter{Methodology}\label{chap:3}
 
-This chapter presents the methodology used in This thematic paper for the proposed eBPF-based ransomware detection system. It introduces the system architecture, data collection infrastructure, dataset construction process, tokenization scheme, and model architecture. It also describes the LOFO evaluation protocol and the associated metrics, before concluding with a real-time deployment prototype that demonstrates the practical feasibility of the proposed approach.
+This chapter presents the methodology used in this thematic paper for the proposed eBPF-based ransomware detection system. It introduces the system architecture, data collection infrastructure, dataset construction process, tokenization scheme, and model architecture. It also describes the LOFO evaluation protocol and the associated metrics, before concluding with a real-time deployment prototype that demonstrates the practical feasibility of the proposed approach.
 
 \section{System Overview}\label{sec:3.1}
 
@@ -394,17 +402,17 @@ The proposed system is designed to detect file-encrypting ransomware on Linux en
 
 \subsection{System Architecture Overview}\label{sec:3.1.2}
 
-The proposed system implements an end-to-end pipeline for capturing, representing, and classifying process-level file I/\allowbreak{}O behavior in real time. As illustrated in Figure~\ref{fig:3-1}, the architecture separates kernel-space event capture from userspace processing and consists of five stages.
+The proposed system implements an end-to-end pipeline for capturing, representing, and classifying process-level file I/O behavior in real time. As illustrated in Figure~\ref{fig:3-1}, the architecture separates kernel-space event capture from userspace processing and consists of five stages.
 
 \begin{itemize}
-\item Stage 1 --- Kernel-level event capture: eBPF kprobes attached to vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename capture file I/\allowbreak{}O events at the Linux Virtual File System (VFS) layer. For each event, the sensor records the operation type, process identifier, process name, byte offset, transfer size, timestamp, and up to seven components of the file path. The resulting event records are transferred from kernel space to userspace through a shared BPF ring buffer.
+\item Stage 1 --- Kernel-level event capture: eBPF kprobes attached to vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename capture file I/O events at the Linux Virtual File System (VFS) layer. For each event, the sensor records the operation type, process identifier, process name, byte offset, transfer size, timestamp, and up to seven components of the file path. The resulting event records are transferred from kernel space to userspace through a shared BPF ring buffer.
 \item Stage 2 --- Userspace preprocessing and tokenization: A userspace callback reconstructs the file path from the captured dentry components and removes events associated with predefined orchestration and monitoring utilities. The remaining events are grouped by process and converted into pairs of 10-bit tokens. These tokens encode temporal, spatial, operational, and byte-overlap information, as described in Section~\ref{sec:3.4}.
-\item Stage 3 --- Stateful sequence inference: For each monitored process, the token sequence is processed in chunks of 100 events by a stateful \textmu{}LSTM containing 182,849 trainable parameters. The model maintains a separate hidden state for each process and carries this state across consecutive chunks, allowing information from earlier I/\allowbreak{}O activity to influence subsequent predictions without retaining the complete event history.
+\item Stage 3 --- Stateful sequence inference: For each monitored process, the token sequence is processed in chunks of 100 events by a stateful \textmu{}LSTM containing 182,849 trainable parameters. The model maintains a separate hidden state for each process and carries this state across consecutive chunks, allowing information from earlier I/O activity to influence subsequent predictions without retaining the complete event history.
 \item Stage 4 --- Alert decision: The model produces a ransomware probability for each processed chunk. In the research evaluation, a process is considered detected when its probability reaches or exceeds the fixed evaluation threshold of 0.30. The deployment prototype applies a stricter three-layer decision procedure: a probability threshold of 0.85, a three-consecutive-chunk consistency requirement, and a heuristic verification stage based on process and file-path characteristics. The distinction between the evaluation and deployment configurations is detailed in Sections 3.7 and 3.8.
 \item Stage 5 --- Response and reporting: When the deployment pipeline confirms an alert, the system records the process and affected-file information for subsequent investigation. The prototype can suspend the suspected process using SIGSTOP and optionally initiate a filesystem snapshot where the underlying storage configuration supports this operation. These response functions demonstrate system integration and are not included in the primary LOFO detection evaluation.
 \end{itemize}
 
-The proposed system draws on the sequence-modeling and tokenization concepts introduced by the CLEAR framework \cite{ref9}, which was developed using Windows NVMe command streams collected offline through Xperf. Rather than directly reproducing CLEAR, this work adapts its underlying concepts to Linux by introducing a live eBPF sensor that captures process-level file I/\allowbreak{}O events at the VFS layer. This adaptation addresses the limited availability of Linux-generated ransomware I/\allowbreak{}O traces identified by CLEAR while preserving file-path and process context that is unavailable at the NVMe command layer. Figure~\ref{fig:3-1} presents the resulting five-stage architecture and shows the boundary between kernel-space event capture and userspace tokenization, inference, alert confirmation, and response.
+The proposed system draws on the sequence-modeling and tokenization concepts introduced by the CLEAR framework \cite{ref9}, which was developed using Windows NVMe command streams collected offline through Xperf. Rather than directly reproducing CLEAR, this work adapts its underlying concepts to Linux by introducing a live eBPF sensor that captures process-level file I/O events at the VFS layer. This adaptation addresses the limited availability of Linux-generated ransomware I/O traces identified by CLEAR while preserving file-path and process context that is unavailable at the NVMe command layer. Figure~\ref{fig:3-1} presents the resulting five-stage architecture and shows the boundary between kernel-space event capture and userspace tokenization, inference, alert confirmation, and response.
 
 \begin{figure}[htbp]
 \centering
@@ -414,12 +422,12 @@ The proposed system draws on the sequence-modeling and tokenization concepts int
 
 \subsection{Design Rationale: Why eBPF at the VFS Layer}\label{sec:3.1.3}
 
-Three candidate instrumentation layers were considered for kernel-level I/\allowbreak{}O monitoring: the system call interface, the Virtual File System (VFS) layer, and the block device layer. Table~\ref{tab:3-1} summarizes their trade-offs in terms of path visibility, PID attribution, and expected monitoring overhead.
+Three candidate instrumentation layers were considered for kernel-level I/O monitoring: the system call interface, the Virtual File System (VFS) layer, and the block device layer. Table~\ref{tab:3-1} summarizes their trade-offs in terms of path visibility, PID attribution, and expected monitoring overhead.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Comparison of kernel I/\allowbreak{}O monitoring layers.}\label{tab:3-1}
+\caption{Comparison of kernel I/O monitoring layers.}\label{tab:3-1}
 \begin{tabularx}{\textwidth}{llLL}
 \hline
 \textbf{Layer} & \textbf{Path Visibility} & \textbf{PID Attribution} & \textbf{Expected relative overhead} \\
@@ -437,13 +445,13 @@ WaR and RaR byte-overlap features are implemented offline rather than inside the
 
 \subsection{Threat Model and Assumptions}\label{sec:3.1.4}
 
-The proposed system targets Linux file-encrypting ransomware that generates observable I/\allowbreak{}O patterns at the Virtual File System (VFS) layer \cite{ref50}. The threat model assumes that the ransomware performs a sequence of READ (to obtain plaintext), WRITE (to overwrite with ciphertext), and optionally RENAME (to change the file extension) operations on victim files, and that these operations are issued through the standard kernel entry points instrumented by the eBPF sensor --- specifically vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename. The threat model further assumes that the ransomware process is not privileged to disable or unload the eBPF instrumentation, and that the operating system kernel and the eBPF subsystem are intact at detection time. The reported false-positive rates assume benign workloads drawn from the categories represented in the training set (archiving, legitimate encryption, secure deletion, developer activity, document editing, file copying, and simulated web browsing); operating-environment workloads outside this distribution may exhibit different false-positive characteristics and would require workload-specific heuristic tuning.
+The proposed system targets Linux file-encrypting ransomware that generates observable I/O patterns at the Virtual File System (VFS) layer \cite{ref50}. The threat model assumes that the ransomware performs a sequence of READ (to obtain plaintext), WRITE (to overwrite with ciphertext), and optionally RENAME (to change the file extension) operations on victim files, and that these operations are issued through the standard kernel entry points instrumented by the eBPF sensor --- specifically vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename. The threat model further assumes that the ransomware process is not privileged to disable or unload the eBPF instrumentation, and that the operating system kernel and the eBPF subsystem are intact at detection time. The reported false-positive rates assume benign workloads drawn from the categories represented in the training set (archiving, legitimate encryption, secure deletion, developer activity, document editing, file copying, and simulated web browsing); operating-environment workloads outside this distribution may exhibit different false-positive characteristics and would require workload-specific heuristic tuning.
 
-The following are explicitly out of scope. First, kernel-level rootkits that disable, unload, or subvert eBPF probes; fileless malware operating entirely in memory; pure data exfiltration without on-disk encryption; and ransom-note droppers that do not encrypt files. Second, I/\allowbreak{}O paths that bypass the instrumented kernel entry points: vectored I/\allowbreak{}O issued through pwritev and preadv, asynchronous submission through io\_\allowbreak{}uring, memory-mapped writeback via mmap and msync, and direct-mode writes via O\_\allowbreak{}DIRECT. The current sensor does not observe these paths, and Guunra and a subset of Akira variants empirically exhibit this evasion behavior (see Section~\ref{sec:4.5.2}). Third, adversarial behaviors within userspace that exploit the heuristic gate, including process-name spoofing via prctl(PR\_\allowbreak{}SET\_\allowbreak{}NAME) to match the trusted-process allowlist, encrypted-extension obfuscation that avoids the eighteen-entry ransom-extension list, target-path mimicry that emits the majority of writes into system directories before pivoting to user data, and intermittent or low-and-slow encryption strategies that emit writes too sparsely for sustained-chunk detection. Heuristic robustness against these adversarial moves is not evaluated. Fourth, sub-quantization writes: an attacker that writes fewer bytes per operation than the smallest size bucket can pin every WRITE token to the same size quantum, defeating the size-based behavioral signal. Extending the sensor hook set is identified as future work; the effect of token-resolution limits is examined through the SougoLock case in Section~\ref{sec:4.5.3} and Appendix~\ref{sec:F.6} and is summarized in Section~\ref{sec:5.1.1}.
+The following are explicitly out of scope. First, kernel-level rootkits that disable, unload, or subvert eBPF probes; fileless malware operating entirely in memory; pure data exfiltration without on-disk encryption; and ransom-note droppers that do not encrypt files. Second, I/O paths that bypass the instrumented kernel entry points: vectored I/O issued through pwritev and preadv, asynchronous submission through io\_\allowbreak{}uring, memory-mapped writeback via mmap and msync, and direct-mode writes via O\_\allowbreak{}DIRECT. The current sensor does not observe these paths, and Guunra and a subset of Akira variants empirically exhibit this evasion behavior (see Section~\ref{sec:4.5.2}). Third, adversarial behaviors within userspace that exploit the heuristic gate, including process-name spoofing via prctl(PR\_\allowbreak{}SET\_\allowbreak{}NAME) to match the trusted-process allowlist, encrypted-extension obfuscation that avoids the eighteen-entry ransom-extension list, target-path mimicry that emits the majority of writes into system directories before pivoting to user data, and intermittent or low-and-slow encryption strategies that emit writes too sparsely for sustained-chunk detection. Heuristic robustness against these adversarial moves is not evaluated. Fourth, sub-quantization writes: an attacker that writes fewer bytes per operation than the smallest size bucket can pin every WRITE token to the same size quantum, defeating the size-based behavioral signal. Extending the sensor hook set is identified as future work; the effect of token-resolution limits is examined through the SougoLock case in Section~\ref{sec:4.5.3} and Appendix~\ref{sec:F.6} and is summarized in Section~\ref{sec:5.1.1}.
 
 \section{Data Collection}\label{sec:3.2}
 
-This section describes the infrastructure used to collect the dataset of ransomware and benign file-I/\allowbreak{}O events. The environment comprises an isolated virtual machine, an eBPF-based kernel sensor, a scripted benign workload generator, an automated orchestration pipeline, and a CSV-to-Parquet conversion stage.
+This section describes the infrastructure used to collect the dataset of ransomware and benign file-I/O events. The environment comprises an isolated virtual machine, an eBPF-based kernel sensor, a scripted benign workload generator, an automated orchestration pipeline, and a CSV-to-Parquet conversion stage.
 
 \subsection{Isolated Virtual Machine Environment}\label{sec:3.2.1}
 
@@ -480,7 +488,7 @@ The sensor includes two measures that impede casual interference: the sensor bin
 
 \subsection{Benign Workload Generator}\label{sec:3.2.3}
 
-To ensure that the benign class contains realistic file-I/\allowbreak{}O patterns --- including archiving, legitimate user-initiated encryption, and developer workflows that naturally produce Write-after-Read sequences --- a Python-based benign workload generator is used both alongside the malware in mixed-mode captures and independently in benign-only captures.
+To ensure that the benign class contains realistic file-I/O patterns --- including archiving, legitimate user-initiated encryption, and developer workflows that naturally produce Write-after-Read sequences --- a Python-based benign workload generator is used both alongside the malware in mixed-mode captures and independently in benign-only captures.
 
 The generator draws files from the configured file pools described in Appendix~\ref{app:B} and selects uniformly among seven task methods: archiving, legitimate encryption, secure deletion, developer activity, document editing, disk operations, and simulated web browsing. Appendix~\ref{app:B} documents the file-pool mapping, implementation details, scheduling behavior, and reproducibility limitations.
 
@@ -498,7 +506,7 @@ The orchestrator deploys malware samples and an optional benign workload generat
 
 \subsection{CSV-to-Parquet Conversion and Labeling}\label{sec:3.2.5}
 
-The raw CSV sensor output is converted to Apache Parquet format through a multi-step pipeline that parses with Pandas (C-engine, Python fallback for malformed rows), applies event-level labeling via process-name matching, and emits three output artifacts per run: recording.parquet, process\_\allowbreak{}tree.parquet, and recording\_\allowbreak{}metadata.json. The detailed labeling methodology is described in Section~\ref{sec:3.3.3}; the Pandas parsing configuration, malformed-row recovery, and full schema of the three artifacts are given in Appendix~\ref{sec:C.3}.
+The raw CSV sensor output is converted to Apache Parquet format through a multi-step pipeline that parses with Pandas (C-engine, Python fallback for malformed rows), applies event-level labeling via process-name matching, and emits three output artifacts per run: recording.parquet, process\_\allowbreak{}tree.\allowbreak{}parquet, and recording\_\allowbreak{}metadata.\allowbreak{}json. The detailed labeling methodology is described in Section~\ref{sec:3.3.3}; the Pandas parsing configuration, malformed-row recovery, and full schema of the three artifacts are given in Appendix~\ref{sec:C.3}.
 
 \section{Dataset}\label{sec:3.3}
 
@@ -506,9 +514,9 @@ This section presents the dataset used for training and evaluation. It covers th
 
 \subsection{Ransomware Families}\label{sec:3.3.1}
 
-The dataset comprises 14 Linux ransomware families representing diverse encryption strategies and I/\allowbreak{}O behavioral patterns.
+The dataset comprises 14 Linux ransomware families representing diverse encryption strategies and I/O behavioral patterns.
 
-The evaluation set was assembled from a broader candidate pool of 63 Linux ELF ransomware binaries collected from publicly tracked threat-intelligence repositories and grouped into 30 candidate families. Each binary was executed inside an isolated sandbox virtual machine; candidates that failed to detonate --- typically due to missing command-line flags, hard-coded affiliate passwords, or platform-specific dependencies, such as ESXi runtime --- were excluded from training and evaluation. After this triage, 14 families comprising 28 binaries produced 494 productive sandbox runs and constitute the final dataset reported in This thematic paper. Excluded families include Mirai (network botnet, not ransomware), BrainCipher (ESXi-only encryptor that produced no encryption activity on the Linux VM used in this study), GonnaCry and ItsSoEasy (legacy samples without productive runs), Qilin (requires an affiliate password not available to this study), and Trigona (binary failed to detonate under standard invocation). A complete per-binary inclusion table --- listing SHA-256 hash, architecture, status, and exclusion reason --- is provided in Appendix~\ref{app:A}.
+The evaluation set was assembled from a broader candidate pool of 63 Linux ELF ransomware binaries collected from publicly tracked threat-intelligence repositories and grouped into 30 candidate families. Each binary was executed inside an isolated sandbox virtual machine; candidates that failed to detonate --- typically due to missing command-line flags, hard-coded affiliate passwords, or platform-specific dependencies, such as ESXi runtime --- were excluded from training and evaluation. After this triage, 14 families comprising 28 binaries produced 494 productive sandbox runs and constitute the final dataset reported in this thematic paper. Excluded families include Mirai (network botnet, not ransomware), BrainCipher (ESXi-only encryptor that produced no encryption activity on the Linux VM used in this study), GonnaCry and ItsSoEasy (legacy samples without productive runs), Qilin (requires an affiliate password not available to this study), and Trigona (binary failed to detonate under standard invocation). A complete per-binary inclusion table --- listing SHA-256 hash, architecture, status, and exclusion reason --- is provided in Appendix~\ref{app:A}.
 
 \begin{table}[htbp]
 \centering
@@ -539,15 +547,15 @@ TOTAL & 494 & 598.6 &  &  &  \\
 
 Note. The event values report rows with Label = 1 in the selected malware-session Parquet recordings. They exclude Label = 0 events and the 188 standalone benign-workload recordings. The total is 598,613,562 events, rounded to 598.6 million in the table.
 
-The 14 families fall into three behavioral groups based on their observed per-run encryption patterns and WaR byte-overlap frequencies, as characterized in Table~\ref{tab:3-3} and Table~\ref{tab:4-5}. The encryption-dominant group (G1: Bert, BlackBasta, HelloKitty, IceFire, Nitrogen, Sodinokibi, SougoLock) is characterized by sustained file-encryption activity, from small fixed-chunk in-place overwrites to bulk and medium-chunk encryption; the prototype must separate high-volume write bursts from benign editor or compiler I/\allowbreak{}O. The rename-dominant group (G2: Guunra) relies almost exclusively on a temporary-file-then-rename strategy, producing a RENAME-heavy event sequence with negligible ciphertext bytes written to the target path before detection. The bimodal group (G3: Akira, LockBit, Monti, RAWorld, RansomEXX, Royal) interleaves both patterns within a single run or exhibits varying strategies across runs; streaming evaluation captures intermittent high-probability windows between encryption bursts. These groups are carried through the per-family results in Chapter~\ref{chap:4} so that performance can be read against behavioral rather than alphabetical ordering. The groupings are manually assigned based on observed VFS signal profiles and are not the output of a formal clustering algorithm.
+The 14 families fall into three behavioral groups based on their observed per-run encryption patterns and WaR byte-overlap frequencies, as characterized in Table~\ref{tab:3-3} and Table~\ref{tab:4-5}. The encryption-dominant group (G1: Bert, BlackBasta, HelloKitty, IceFire, Nitrogen, Sodinokibi, SougoLock) is characterized by sustained file-encryption activity, from small fixed-chunk in-place overwrites to bulk and medium-chunk encryption; the prototype must separate high-volume write bursts from benign editor or compiler I/O. The rename-dominant group (G2: Guunra) relies almost exclusively on a temporary-file-then-rename strategy, producing a RENAME-heavy event sequence with negligible ciphertext bytes written to the target path before detection. The bimodal group (G3: Akira, LockBit, Monti, RAWorld, RansomEXX, Royal) interleaves both patterns within a single run or exhibits varying strategies across runs; streaming evaluation captures intermittent high-probability windows between encryption bursts. These groups are carried through the per-family results in Chapter~\ref{chap:4} so that performance can be read against behavioral rather than alphabetical ordering. The groupings are manually assigned based on observed VFS signal profiles and are not the output of a formal clustering algorithm.
 
 \subsection{Dataset Composition}\label{sec:3.3.2}
 
-The final dataset comprises 682 usable Parquet recordings: 494 malware-session recordings collected across fourteen ransomware families and 188 standalone benign-workload recordings. Direct counting of rows with Label = 1 in the selected malware-session Parquet recordings yielded 598,613,562 malware-labeled VFS I/\allowbreak{}O events (approximately 598.6 million). This count excludes Label = 0 events and the 188 standalone benign-workload recordings; therefore, it should not be interpreted as the total number of event rows across all 682 recordings.
+The final dataset comprises 682 usable Parquet recordings: 494 malware-session recordings collected across fourteen ransomware families and 188 standalone benign-workload recordings. Direct counting of rows with Label = 1 in the selected malware-session Parquet recordings yielded 598,613,562 malware-labeled VFS I/O events (approximately 598.6 million). This count excludes Label = 0 events and the 188 standalone benign-workload recordings; therefore, it should not be interpreted as the total number of event rows across all 682 recordings.
 
 The 494 malware runs represent 28 unique SHA-256 binary samples across 14 families, with per-family run counts ranging from 10 (RAWorld, SougoLock) to 137 (Akira). Akira's elevated run count reflects the fact that 11 distinct hash variants were collected, each exercised across all five victim sets in both modes. The per-family run distribution is summarized in Table~\ref{tab:3-3}; the provenance of this spread and the rationale for not rebalancing it are discussed in Section~\ref{sec:4.2}.
 
-Each malware run directory contains two Parquet files with the same execution provenance but different event composition. The recording.parquet file preserves the events retained from the sensor output, whereas recording\_\allowbreak{}filtered.parquet removes events associated with the orchestration and monitoring utilities described in Section~\ref{sec:3.3.6}. Training and evaluation use one selected malware recording per run, preferring recording\_\allowbreak{}filtered.parquet when available, together with the standalone benign recordings. The common event schema contains Timestamp, Process ID, Process Name, OpCode, Path Name, Offset (Bytes), Size (Bytes), and Label. The WaR, RaR, and RENAME auxiliary features are computed during tokenization and are not stored as authoritative columns in the selected Parquet recordings.
+Each malware run directory contains two Parquet files with the same execution provenance but different event composition. The recording.parquet file preserves the events retained from the sensor output, whereas recording\_\allowbreak{}filtered.\allowbreak{}parquet removes events associated with the orchestration and monitoring utilities described in Section~\ref{sec:3.3.6}. Training and evaluation use one selected malware recording per run, preferring recording\_\allowbreak{}filtered.\allowbreak{}parquet when available, together with the standalone benign recordings. The common event schema contains Timestamp, Process ID, Process Name, OpCode, Path Name, Offset (Bytes), Size (Bytes), and Label. The WaR, RaR, and RENAME auxiliary features are computed during tokenization and are not stored as authoritative columns in the selected Parquet recordings.
 
 \section{Labeling Methodology}\label{sec:3.3.3}
 
@@ -577,7 +585,7 @@ A data quality audit verified all 494 run directories against five criteria: sch
 
 \subsection{Class Imbalance}\label{sec:3.3.5}
 
-The dataset exhibits severe class imbalance at the process level. Established approaches for learning from imbalanced data motivate the weighted-loss and subsampling strategies applied in This thematic paper \cite{ref49}. Because training operates on per-process examples while the model consumes per-event token streams, process-level and event-level distributions are treated as distinct analytical scopes.
+The dataset exhibits severe class imbalance at the process level. Established approaches for learning from imbalanced data motivate the weighted-loss and subsampling strategies applied in this thematic paper \cite{ref49}. Because training operates on per-process examples while the model consumes per-event token streams, process-level and event-level distributions are treated as distinct analytical scopes.
 
 At the process level, any Process ID containing at least one Label = 1 event is classified as a malware process; every other PID is treated as benign. Under this definition, the raw process-level ratio is approximately 2,518:1 (benign:malware) across the training partition (see Table~\ref{tab:3-4}).
 
@@ -602,7 +610,7 @@ Note. Process counts are reported before fold-specific benign subsampling and mi
 At the process level, the complete pre-filter pool contains 1,296,752 benign processes and 515 malware processes, corresponding to a benign-to-malware ratio of approximately 2,518:1. This raw process-level ratio does not represent the effective class ratio presented to the model in each fold. As described in Section~\ref{sec:3.6.2}, fold-specific benign subsampling, minimum-sequence filtering, and weighted loss are applied during training. Event-level and process-level class distributions are therefore reported separately and should not be interpreted as interchangeable measures of class imbalance.
 
 Three complementary strategies are applied: 
-(1) Weighted loss is applied through BCEWithLogitsLoss using a bounded positive-class weight, pos\_\allowbreak{}weight = min(max(1.0, $\rho$/\allowbreak{}2), 10), where $\rho$ denotes the benign-to-malware process ratio in each fold's training partition.
+(1) Weighted loss is applied through BCEWithLogitsLoss using a bounded positive-class weight, $\mathrm{pos\_weight} = \min(\max(1.0, \rho/2), 10)$, where $\rho$ denotes the benign-to-malware process ratio in each fold's training partition.
 
 (2) Benign sub-sampling: the MAX\_\allowbreak{}BENIGN\_\allowbreak{}PROCS = 5000 cap bounds benign processes per fold, giving a mean post-cap ratio of approximately 10.5:1 (benign:malware), reduced to about 7.5:1 after the minimum-sequence filter of 10 tokens, equivalent to five accepted VFS events.
 
@@ -610,15 +618,15 @@ Three complementary strategies are applied:
 
 \subsection{Noise Filtering}\label{sec:3.3.6}
 
-A secondary filtering layer removes events produced by orchestrator utility processes (wc, pgrep, ps, awk, top, dirname) that are invoked to manage malware execution and monitoring. These short-lived system utilities contribute heavy-tail I/\allowbreak{}O that is unrelated to the ransomware behavior under study. The full process-name blacklist, its justification, and the corresponding before/\allowbreak{}after WaR/\allowbreak{}RaR rates are provided in Appendix~\ref{sec:C.2}.
+A secondary filtering layer removes events produced by orchestrator utility processes (wc, pgrep, ps, awk, top, dirname) that are invoked to manage malware execution and monitoring. These short-lived system utilities contribute heavy-tail I/O that is unrelated to the ransomware behavior under study. The full process-name blacklist, its justification, and the corresponding before/\allowbreak{}after WaR/\allowbreak{}RaR rates are provided in Appendix~\ref{sec:C.2}.
 
 \section{Tokenization Scheme}\label{sec:3.4}
 
-This part defines the tokenization scheme that converts raw VFS I/\allowbreak{}O events into fixed-width integer tokens suitable for \textmu{}LSTM input. It first presents the 10-bit token layout and its field definitions, and then examines the effective signal carried by each field.
+This part defines the tokenization scheme that converts raw VFS I/O events into fixed-width integer tokens suitable for \textmu{}LSTM input. It first presents the 10-bit token layout and its field definitions, and then examines the effective signal carried by each field.
 
 \subsection{10-bit Token Layout}\label{sec:3.4.1}
 
-Each I/\allowbreak{}O event is encoded into two 10-bit tokens (VOCAB\_\allowbreak{}SIZE = 1,024), following a tokenization scheme adapted from the CLEAR framework \cite{ref9}. Token1 encodes temporal, size, and opcode information; Token2 encodes spatial position and behavioral auxiliary features. Table~\ref{tab:3-5} defines each field.
+Each I/O event is encoded into two 10-bit tokens (VOCAB\_\allowbreak{}SIZE = 1,024), following a tokenization scheme adapted from the CLEAR framework \cite{ref9}. Token1 encodes temporal, size, and opcode information; Token2 encodes spatial position and behavioral auxiliary features. Table~\ref{tab:3-5} defines each field.
 
 \begin{table}[htbp]
 \centering
@@ -633,8 +641,8 @@ Token1 & index & 1 & Always 0 (identifies Token1) \\
  & size\_\allowbreak{}q & 4 & floor(log2(bytes + 1)), clamped [0, 15] \\
  & opcode\_\allowbreak{}q & 1 & min(opcode, 1): READ=0, WRITE/\allowbreak{}RENAME=1 \\
 Token2 & index & 1 & Always 1 (identifies Token2) \\
- & offset\_\allowbreak{}msb & 4 & (offset /\allowbreak{} 4096) \textgreater{}\textgreater{} 2, masked to 4 bits \\
- & offset\_\allowbreak{}lsb & 2 & (offset /\allowbreak{} 4096) \& 0x3 \\
+ & offset\_\allowbreak{}msb & 4 & (offset / 4096) \textgreater{}\textgreater{} 2, masked to 4 bits \\
+ & offset\_\allowbreak{}lsb & 2 & (offset / 4096) \& 0x3 \\
  & aux & 3 & bit2=RENAME, bit1=WaR, bit0=RaR \\
 \hline
 \end{tabularx}
@@ -642,9 +650,9 @@ Token2 & index & 1 & Always 1 (identifies Token2) \\
 
 RENAME events share the same opcode\_\allowbreak{}q = 1 as WRITE events; the distinguishing signal is instead carried by aux bit2 (rename\_\allowbreak{}flag) in Token2. READ events set opcode\_\allowbreak{}q = 0 and do not activate any auxiliary bit.
 
-The log-quantized fields (delta\_\allowbreak{}t and size\_\allowbreak{}q) compress the wide dynamic range of I/\allowbreak{}O timing and sizes into 4-bit values. The file offset is first converted to 4,096-byte page units, then split into two sub-fields using standard bit manipulation: the upper 4 bits (offset\_\allowbreak{}msb = pages \textgreater{}\textgreater{} 2) capture coarse file position, while the lower 2 bits (offset\_\allowbreak{}lsb = pages \& 0x3) capture fine-grained page alignment. Together, the 6-bit offset field can represent 64 distinct page regions within a file. The auxiliary bits encode byte-range overlap flags following CLEAR's OV\_\allowbreak{}WaR criterion \cite{ref9}: WaR (Write-after-Read) is set to 1 when a WRITE operation's byte range [offset, offset+size] overlaps with the most recent READ on the same file; RaR (Read-after-Read) is set analogously for consecutive READ operations on the same file. The overlap is tracked per-PID using a last-read map keyed by file path, with no cross-process aggregation. These flags provide behavioral signals characteristic of encrypt-in-place ransomware patterns, where the malware reads a file block, encrypts it, and writes the ciphertext back to the same byte range.
+The log-quantized fields (delta\_\allowbreak{}t and size\_\allowbreak{}q) compress the wide dynamic range of I/O timing and sizes into 4-bit values. The file offset is first converted to 4,096-byte page units, then split into two sub-fields using standard bit manipulation: the upper 4 bits (offset\_\allowbreak{}msb = pages \textgreater{}\textgreater{} 2) capture coarse file position, while the lower 2 bits (offset\_\allowbreak{}lsb = pages \& 0x3) capture fine-grained page alignment. Together, the 6-bit offset field can represent 64 distinct page regions within a file. The auxiliary bits encode byte-range overlap flags following CLEAR's OV\_\allowbreak{}WaR criterion \cite{ref9}: WaR (Write-after-Read) is set to 1 when a WRITE operation's byte range [offset, offset+size] overlaps with the most recent READ on the same file; RaR (Read-after-Read) is set analogously for consecutive READ operations on the same file. The overlap is tracked per-PID using a last-read map keyed by file path, with no cross-process aggregation. These flags provide behavioral signals characteristic of encrypt-in-place ransomware patterns, where the malware reads a file block, encrypts it, and writes the ciphertext back to the same byte range.
 
-The complete token layout is shown in Figure~\ref{fig:3-4}: Token 1 carries the temporal delta, I/\allowbreak{}O size, opcode, and a token-index bit; Token 2 carries the MSB and LSB offset fields together with the three auxiliary flags (RENAME, WaR, RaR). The figure also presents a worked example for a 12,288-byte WRITE at offset 8,192 occurring 50 ms after the previous event, showing the bit values assigned to each field.
+The complete token layout is shown in Figure~\ref{fig:3-4}: Token 1 carries the temporal delta, I/O size, opcode, and a token-index bit; Token 2 carries the MSB and LSB offset fields together with the three auxiliary flags (RENAME, WaR, RaR). The figure also presents a worked example for a 12,288-byte WRITE at offset 8,192 occurring 50 ms after the previous event, showing the bit values assigned to each field.
 
 \begin{figure}[htbp]
 \centering
@@ -656,7 +664,7 @@ Three deviations from the CLEAR specification are introduced at the point of tok
 
 \subsection{Effective Signal Analysis}\label{sec:3.4.2}
 
-The tokenizer remaps sensor opcodes to the model encoding (READ = 0, WRITE = 1) before quantization. Each accepted event contributes 18 event-feature bits distributed across two 10-bit token IDs, with one index bit in each token distinguishing Token 1 from Token 2. The event-feature fields are delta\_\allowbreak{}t (4 bits, I/\allowbreak{}O velocity), size\_\allowbreak{}q (4 bits, write-size patterns), opcode\_\allowbreak{}q (1 bit, read versus write), offset (6 bits, spatial file position), RENAME (1 bit, rename behavior), WaR (1 bit, write-after-read overlap), and RaR (1 bit, read-after-read overlap). In CLEAR's block-layer setting, the ablation study reported offset and delta\_\allowbreak{}t as the strongest detection signals, with auxiliary overlap features contributing a smaller but non-negligible effect. This result is cited as directional evidence only, as the VFS-layer setting differs from CLEAR's block-layer measurements.
+The tokenizer remaps sensor opcodes to the model encoding (READ = 0, WRITE = 1) before quantization. Each accepted event contributes 18 event-feature bits distributed across two 10-bit token IDs, with one index bit in each token distinguishing Token 1 from Token 2. The event-feature fields are delta\_\allowbreak{}t (4 bits, I/O velocity), size\_\allowbreak{}q (4 bits, write-size patterns), opcode\_\allowbreak{}q (1 bit, read versus write), offset (6 bits, spatial file position), RENAME (1 bit, rename behavior), WaR (1 bit, write-after-read overlap), and RaR (1 bit, read-after-read overlap). In CLEAR's block-layer setting, the ablation study reported offset and delta\_\allowbreak{}t as the strongest detection signals, with auxiliary overlap features contributing a smaller but non-negligible effect. This result is cited as directional evidence only, as the VFS-layer setting differs from CLEAR's block-layer measurements.
 
 \section{Model Architecture}\label{sec:3.5}
 
@@ -668,7 +676,7 @@ The detection model is a stateful \textmu{}LSTM comprising five layers: an embed
 
 \subsection{Truncated Backpropagation Through Time}\label{sec:3.5.2}
 
-Training employs Truncated Backpropagation Through Time (TBPTT) \cite{ref45} with a chunk size of 100 events (200 tokens). Per-process gradient accumulation divides the loss by the number of chunks before calling optimizer.step(), ensuring that every process contributes equal gradient magnitude regardless of its I/\allowbreak{}O length. The hidden state is detached between chunks (hidden = (h.detach(), c.detach())) to prevent gradient flow across chunk boundaries. All training is performed in float32 precision.
+Training employs Truncated Backpropagation Through Time (TBPTT) \cite{ref45} with a chunk size of 100 events (200 tokens). Per-process gradient accumulation divides the loss by the number of chunks before calling optimizer.step(), ensuring that every process contributes equal gradient magnitude regardless of its I/O length. The hidden state is detached between chunks (hidden = (h.detach(), c.detach())) to prevent gradient flow across chunk boundaries. All training is performed in float32 precision.
 
 \subsection{Hyperparameters}\label{sec:3.5.3}
 
@@ -689,7 +697,7 @@ LEARNING\_\allowbreak{}RATE & 0.001 & Adam default \\
 DROPOUT & 0.3 & Regularisation \\
 GRAD\_\allowbreak{}CLIP & 1.0 & Prevent exploding gradients \\
 EPOCHS & 10 (early stop) & Patience = 3 \\
-pos\_\allowbreak{}weight & min(max(1.0, ratio/\allowbreak{}2.0), 10.0) & Capped to prevent FP explosion \\
+pos\_\allowbreak{}weight & min(max(1.0, ratio/2.0), 10.0) & Capped to prevent FP explosion \\
 BATCH\_\allowbreak{}SIZE & 1 & Stateful \textmu{}LSTM (per-process) \\
 MAX\_\allowbreak{}BENIGN\_\allowbreak{}PROCS & 5,000 & available GPU memory budget \\
 MIN\_\allowbreak{}TOKENS\_\allowbreak{}THRESHOLD & 10 tokens & Equivalent to five accepted VFS events; excludes shorter processes \\
@@ -702,13 +710,13 @@ DEPLOY\_\allowbreak{}THRESHOLD & 0.85 & Real-time Layer 1 (Section~\ref{sec:3.8.
 
 \section{Training Methodology}\label{sec:3.6}
 
-This part describes the training methodology used in This thematic paper, including the leave-one-family-out (LOFO) protocol, the three-way data split, the loss function and class-weighting strategy, and the early stopping and learning-rate schedule.
+This part describes the training methodology used in this thematic paper, including the leave-one-family-out (LOFO) protocol, the three-way data split, the loss function and class-weighting strategy, and the early stopping and learning-rate schedule.
 
 \subsection{Leave-One-Family-Out Protocol}\label{sec:3.6.1}
 
 The leave-one-family-out (LOFO) protocol produced fourteen folds, with one ransomware family withheld as the test family in each fold. All recording files associated with the held-out family were excluded from training and validation. Consequently, no recording from the held-out family was used for model fitting, hyperparameter selection, or early stopping.
 
-The remaining thirteen ransomware families were divided into training and validation partitions at the recording-file level. The split was performed separately within each family using a fixed random seed of 42, with 80\% of the recording files assigned to training and 20\% assigned to validation. Benign recording files were independently divided into training, validation, and test partitions using a 70/\allowbreak{}10/\allowbreak{}20 random split with the same seed. Figure~\ref{fig:3-5} illustrates this procedure using the BlackBasta fold as an example.
+The remaining thirteen ransomware families were divided into training and validation partitions at the recording-file level. The split was performed separately within each family using a fixed random seed of 42, with 80\% of the recording files assigned to training and 20\% assigned to validation. Benign recording files were independently divided into training, validation, and test partitions using a 70/10/20 random split with the same seed. Figure~\ref{fig:3-5} illustrates this procedure using the BlackBasta fold as an example.
 
 \begin{figure}[htbp]
 \centering
@@ -730,7 +738,7 @@ The partitioning procedure was recording-disjoint but not binary-hash-disjoint o
 
 \subsection{Loss Function and Class Weighting}\label{sec:3.6.3}
 
-The model is trained with BCEWithLogitsLoss (binary cross-entropy with logits). The positive class weight is set to min(max(1.0, ratio/\allowbreak{}2.0), 10.0), where ratio is the benign-to-malware process count ratio within the training partition of each fold. An upper bound of 10.0 was adopted after preliminary experiments showed that uncapped weights produced elevated false-positive rates. In conjunction with class weighting, per-process gradient accumulation normalizes the loss by the number of chunks, ensuring equal gradient contribution regardless of process length.
+The model is trained with BCEWithLogitsLoss (binary cross-entropy with logits). The positive class weight is set to min(max(1.0, ratio/2.0), 10.0), where ratio is the benign-to-malware process count ratio within the training partition of each fold. An upper bound of 10.0 was adopted after preliminary experiments showed that uncapped weights produced elevated false-positive rates. In conjunction with class weighting, per-process gradient accumulation normalizes the loss by the number of chunks, ensuring equal gradient contribution regardless of process length.
 
 \subsection{Early Stopping and Learning Rate Schedule}\label{sec:3.6.4}
 
@@ -738,17 +746,17 @@ ReduceLROnPlateau monitors validation loss with patience = 1 and halves the lear
 
 \section{Evaluation Methodology}\label{sec:3.7}
 
-This part defines the evaluation metrics and protocols used in This thematic paper. It covers the primary metrics and the per-family evaluation procedure.
+This part defines the evaluation metrics and protocols used in this thematic paper. It covers the primary metrics and the per-family evaluation procedure.
 
 \subsection{Primary Metrics}\label{sec:3.7.1}
 
-The primary operational metric is the process-level Missed Detection Rate (MDR), defined as MDR = FN /\allowbreak{} (TP + FN) $\times$ 100\%, where FN is the number of malware processes that are not detected and TP is the number of malware processes that are detected. A malware process is considered detected if its \textmu{}LSTM probability reaches or exceeds the fixed Stage 1 threshold of 0.30 in at least one chunk during its event stream. Otherwise, the process is counted as a false negative. This process-level definition assigns equal weight to each evaluated malware process, regardless of its total I/\allowbreak{}O volume.
+The primary operational metric is the process-level Missed Detection Rate (MDR), defined as MDR = FN / (TP + FN) $\times$ 100\%, where FN is the number of malware processes that are not detected and TP is the number of malware processes that are detected. A malware process is considered detected if its \textmu{}LSTM probability reaches or exceeds the fixed Stage 1 threshold of 0.30 in at least one chunk during its event stream. Otherwise, the process is counted as a false negative. This process-level definition assigns equal weight to each evaluated malware process, regardless of its total I/O volume.
 
 A complementary run-level MDR is also reported where applicable. An execution run is considered detected if at least one malware process associated with that run reaches or exceeds the Stage 1 threshold. Consequently, a run containing multiple malware processes is counted as missed only when none of its eligible malware processes is detected. The process-level and run-level MDR values therefore represent different units of analysis and are reported separately.
 
 Detection timeliness is measured using MBD3, defined as the 75th percentile of the cumulative WRITE bytes generated before the first detection among the detected malware processes. For each detected process, WRITE bytes are accumulated up to and including the first chunk whose \textmu{}LSTM probability reaches or exceeds 0.30. Bytes associated with READ, RENAME, and other non-WRITE events are excluded. Processes that never reach the threshold are represented by MDR and are not included in the MBD3 percentile calculation. A lower MBD3 value therefore indicates that detection occurred after less data had been written. MBD3 is reported in KiB, where 1 KiB equals 1,024 bytes.
 
-The process-level MDR used in This thematic paper is not directly comparable with the MDR reported by CLEAR. CLEAR defines MDR as the proportion of missed ransomware traffic volume at a work point calibrated to a fixed false alarm rate, whereas This thematic paper measures the proportion of missed malware processes at a fixed probability threshold of 0.30. The two evaluations differ in both their units of analysis and their threshold-calibration procedures; therefore, their MDR and MBD3 values should be interpreted within their respective experimental settings rather than compared numerically.
+The process-level MDR used in this thematic paper is not directly comparable with the MDR reported by CLEAR. CLEAR defines MDR as the proportion of missed ransomware traffic volume at a work point calibrated to a fixed false alarm rate, whereas this thematic paper measures the proportion of missed malware processes at a fixed probability threshold of 0.30. The two evaluations differ in both their units of analysis and their threshold-calibration procedures; therefore, their MDR and MBD3 values should be interpreted within their respective experimental settings rather than compared numerically.
 
 \subsection{Per-Family Evaluation}\label{sec:3.7.2}
 
@@ -762,7 +770,7 @@ This section presents a prototype implementation of the proposed detection syste
 
 The real-time deployment prototype implements the complete detection pipeline as a single Python process with four cooperating threads: an event-ingestion thread (eBPF ring-buffer poll loop), an inference worker (per-PID tokenization and inference), a dashboard service (Flask/\allowbreak{}WebSocket state publisher), and a broadcast worker (1 Hz client push).
 
-Each monitored process is tracked through a per-PID state object (PIDState) containing the token buffer, \textmu{}LSTM hidden state (h, c), I/\allowbreak{}O counters, and detection status (Figure~\ref{fig:3-6}). Process lifecycle tracking is implemented via a sched\_\allowbreak{}process\_\allowbreak{}exit tracepoint (primary) with a 30-second idle timeout as a fallback. The full thread role table, message queues, and shutdown protocol are given in Appendix~\ref{sec:E.1}--E.2.
+Each monitored process is tracked through a per-PID state object (PIDState) containing the token buffer, \textmu{}LSTM hidden state (h, c), I/O counters, and detection status (Figure~\ref{fig:3-6}). Process lifecycle tracking is implemented via a sched\_\allowbreak{}process\_\allowbreak{}exit tracepoint (primary) with a 30-second idle timeout as a fallback. The full thread role table, message queues, and shutdown protocol are given in Appendix~\ref{sec:E.1}--E.2.
 
 \begin{figure}[htbp]
 \centering
@@ -806,7 +814,7 @@ Google Colab Pro+ & Variable high-memory GPU environment (G4 \& L4) & Session-sp
 \end{tabularx}
 \end{table}
 
-In all experiments, the filtered dataset was used, namely recording\_\allowbreak{}filtered.parquet for malware runs and the original Parquet files for benign recordings, together with precomputed WaR and RaR byte-overlap columns.
+In all experiments, the filtered dataset was used, namely recording\_\allowbreak{}filtered.\allowbreak{}parquet for malware runs and the original Parquet files for benign recordings, together with precomputed WaR and RaR byte-overlap columns.
 
 The fixed hyperparameter configuration used in all reported experiments is summarized in Table~\ref{tab:4-2}. These values were selected during preliminary development and frozen before any LOFO fold was evaluated. Because that preliminary development centered on the BlackBasta family, it is noted explicitly that the standard LOFO protocol applies to its fold as to every other: the held-out family's recordings appear only in the test partition, and early stopping uses validation loss computed over the remaining thirteen training families.
 
@@ -898,7 +906,7 @@ HelloKitty & 34.48 & 0.7190 & 0.6552 & 0.8444 & 38 & 20 & 7 & 10180.7 \\
 IceFire & 0.00 & 1.0000 & 1.0000 & 0.6863 & 35 & 0 & 16 & 129.2 \\
 Nitrogen & 0.00 & 1.0000 & 1.0000 & 0.7292 & 35 & 0 & 13 & 9407.7 \\
 Sodinokibi & 4.35 & 0.9914 & 0.9565 & 0.5641 & 22 & 1 & 17 & 4182.5 \\
-SougoLock & 100.00 & 0.9450 & 0.0000 & 0.0000 & 0 & 10 & 4 & N/\allowbreak{}A \\
+SougoLock & 100.00 & 0.9450 & 0.0000 & 0.0000 & 0 & 10 & 4 & N/A \\
 \multicolumn{9}{l}{\textbf{Group 2: Rename-dominant}} \\
 Guunra* & 0.00 & 1.0000 & 1.0000 & 0.7838 & 29 & 0 & 8 & 0.0 \\
 \multicolumn{9}{l}{\textbf{Group 3: Bimodal}} \\
@@ -913,7 +921,7 @@ Royal & 0.00 & 1.0000 & 1.0000 & 0.6452 & 20 & 0 & 11 & 5230.8 \\
 \end{adjustbox}
 \end{table}
 
-Note. Families are ordered by behavioral cluster rather than alphabetically. Group 1 = encryption-dominant, Group 2 = rename-dominant, and Group 3 = bimodal. MDR and MBD3 follow the per-process, fixed-threshold definitions introduced in Chapter~\ref{chap:3}. * Guunra detection signal is limited to RENAME events; WRITE operations performed via pwritev/\allowbreak{}preadv/\allowbreak{}io\_\allowbreak{}uring are not captured by the current sensor (see Section~\ref{sec:4.5.2}). The reported MDR therefore measures the model's ability to detect on the RENAME stream alone.
+Note. Families are ordered by behavioral cluster rather than alphabetically. Group 1 = encryption-dominant, Group 2 = rename-dominant, and Group 3 = bimodal. MDR and MBD3 follow the per-process, fixed-threshold definitions introduced in Chapter~\ref{chap:3}. * Guunra detection signal is limited to RENAME events; WRITE operations performed via pwritev/\allowbreak{}preadv/io\_\allowbreak{}uring are not captured by the current sensor (see Section~\ref{sec:4.5.2}). The reported MDR therefore measures the model's ability to detect on the RENAME stream alone.
 
 Across the fourteen held-out-family folds, twelve families achieved an AUC of 0.99 or higher. The two exceptions were HelloKitty (AUC = 0.7190) and SougoLock (AUC = 0.9450), both of which exhibited systematic failure modes analyzed in Section~\ref{sec:4.5}. AUC measures ranking performance across all possible thresholds and should not be interpreted as detection performance at the fixed Stage 1 evaluation threshold of 0.30. This distinction is particularly important for SougoLock: although its AUC was 0.9450, all ten malware processes remained below the Stage 1 evaluation threshold, resulting in Recall = 0 and MDR = 100\%.
 
@@ -933,7 +941,7 @@ This section characterizes the VFS-level behavioral patterns observed across the
 
 \subsection{Behavioral Groups}\label{sec:4.4.1}
 
-The fourteen families are assigned to three behavioral groups based on the per-family I/\allowbreak{}O profiles introduced in Section~\ref{sec:3.3.1}: encryption-dominant, rename-dominant, and bimodal. Table~\ref{tab:4-5} reports the assigned group, the observed WaR and RaR frequencies, and the median write volume per run. These measurements describe the VFS events visible to the instrumented hooks and provide context for the auxiliary-feature analysis reported in Appendix~\ref{app:F}.
+The fourteen families are assigned to three behavioral groups based on the per-family I/O profiles introduced in Section~\ref{sec:3.3.1}: encryption-dominant, rename-dominant, and bimodal. Table~\ref{tab:4-5} reports the assigned group, the observed WaR and RaR frequencies, and the median write volume per run. These measurements describe the VFS events visible to the instrumented hooks and provide context for the auxiliary-feature analysis reported in Appendix~\ref{app:F}.
 
 The encryption-dominant group contains families whose captured traces are primarily characterized by sustained or repeated WRITE activity. The observed patterns range from small fixed-chunk in-place writes, as exhibited by BlackBasta, to larger bulk and medium-chunk writes observed in families such as Bert, IceFire, and Nitrogen. Membership in this group describes the dominant captured behavior and does not imply uniformly successful detection.
 
@@ -1003,6 +1011,7 @@ The broad-cap retrain was correlational: capping every path at 100 events recove
 \centering
 \small
 \caption{Akira LOFO fold: three-way controlled ablation isolating the log-spam factor (Setup A).}\label{tab:4-6}
+\footnotesize
 \begin{tabularx}{\textwidth}{Llllllrrrl}
 \hline
 \textbf{Configuration} & \textbf{MDR (\%)} & \textbf{AUC} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{TP} & \textbf{FN} & \textbf{FP} & \textbf{MBD3 (KiB)} \\
@@ -1018,13 +1027,13 @@ Note. All counts on held-out Akira test processes (n = 137); only the capping st
 
 \subsection{Sensor Blind Spots (Guunra and Akira pwritev variants)}\label{sec:4.5.2}
 
-The eBPF sensor (Section~\ref{sec:3.2.2}) hooks vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename. The real-encryptor variants of Guunra and Akira bypass the read/\allowbreak{}write hooks by performing their file I/\allowbreak{}O through the vectored readv/\allowbreak{}writev/\allowbreak{}pwritev system-call family, which the kernel dispatches via vfs\_\allowbreak{}iter\_\allowbreak{}read/\allowbreak{}vfs\_\allowbreak{}iter\_\allowbreak{}write rather than the scalar vfs\_\allowbreak{}read/\allowbreak{}vfs\_\allowbreak{}write functions the kprobes attach to --- a documented evasion vector for I/\allowbreak{}O-monitoring-based detection \cite{ref24}. Each mechanism was confirmed by running the binaries under strace in the sandbox VM and verifying with an md5 checksum that the file content was genuinely rewritten, not merely renamed. Akira encrypts in place, delivering its ciphertext through pwritev() in chunks at increasing offsets; Guunra reads each file whole through readv() and writes the ciphertext back through writev(), followed by a trailing key blob. In both cases the read of the plaintext and the write of the ciphertext are invisible to the sensor, and the run therefore appears as a RENAME-only trail --- but the subsequent rename() to the ransom extension is captured by the vfs\_\allowbreak{}rename hook, which is why detection still succeeds (Guunra LOFO AUC = 1.0, via the rename-only token pattern). This is a feature-richness limitation, not a detection-capability one: the WRITE-opcode signal is lost, but the rename signature is not. Extending the sensor to hook the vectored-I/\allowbreak{}O path and io\_\allowbreak{}uring submission queues is listed as Future Work in Chapter~\ref{chap:5}.
+The eBPF sensor (Section~\ref{sec:3.2.2}) hooks vfs\_\allowbreak{}read, vfs\_\allowbreak{}write, and vfs\_\allowbreak{}rename. The real-encryptor variants of Guunra and Akira bypass the read/\allowbreak{}write hooks by performing their file I/O through the vectored readv/\allowbreak{}writev/\allowbreak{}pwritev system-call family, which the kernel dispatches via vfs\_\allowbreak{}iter\_\allowbreak{}read/\allowbreak{}vfs\_\allowbreak{}iter\_\allowbreak{}write rather than the scalar vfs\_\allowbreak{}read/\allowbreak{}vfs\_\allowbreak{}write functions the kprobes attach to --- a documented evasion vector for I/O-monitoring-based detection \cite{ref24}. Each mechanism was confirmed by running the binaries under strace in the sandbox VM and verifying with an md5 checksum that the file content was genuinely rewritten, not merely renamed. Akira encrypts in place, delivering its ciphertext through pwritev() in chunks at increasing offsets; Guunra reads each file whole through readv() and writes the ciphertext back through writev(), followed by a trailing key blob. In both cases the read of the plaintext and the write of the ciphertext are invisible to the sensor, and the run therefore appears as a RENAME-only trail --- but the subsequent rename() to the ransom extension is captured by the vfs\_\allowbreak{}rename hook, which is why detection still succeeds (Guunra LOFO AUC = 1.0, via the rename-only token pattern). This is a feature-richness limitation, not a detection-capability one: the WRITE-opcode signal is lost, but the rename signature is not. Extending the sensor to hook the vectored-I/O path and io\_\allowbreak{}uring submission queues is listed as Future Work in Chapter~\ref{chap:5}.
 
-The three families with systematic failure modes exhibit distinct event-mix signatures arising from three separate mechanisms. Guunra and the eight pwritev-based Akira variants listed in Table~\ref{tab:4-7} are both genuine vectored-I/\allowbreak{}O blind spots: their captured runs are dominated by RENAME with almost no visible WRITE, because the encryption writes route through bypassed paths and never reach the sensor. The leave-one-family-out fold still detects both via the rename-only token pattern alone. Akira additionally exhibits a second, unrelated failure mode at the process level: among the false-negative processes analyzed in Section~\ref{sec:4.5.1}, a single high-frequency path accounts for over 97\% of events (99\% writes, 0.27\% renames)---a log-spam dilution effect, not a sensor blind spot, since these writes are fully visible to the sensor but are diluted within the token sequence. The SougoLock profile reflects a separate, third limitation: the offset-resolution limit of Section~\ref{sec:4.5.3}, where the coarse 4-kilobyte offset granularity collapses distinct write locations into the same token. Table~\ref{tab:4-7} reports the per-hash opcode breakdown for the Akira and Guunra vectored-I/\allowbreak{}O blind-spot variants.
+The three families with systematic failure modes exhibit distinct event-mix signatures arising from three separate mechanisms. Guunra and the eight pwritev-based Akira variants listed in Table~\ref{tab:4-7} are both genuine vectored-I/O blind spots: their captured runs are dominated by RENAME with almost no visible WRITE, because the encryption writes route through bypassed paths and never reach the sensor. The leave-one-family-out fold still detects both via the rename-only token pattern alone. Akira additionally exhibits a second, unrelated failure mode at the process level: among the false-negative processes analyzed in Section~\ref{sec:4.5.1}, a single high-frequency path accounts for over 97\% of events (99\% writes, 0.27\% renames)---a log-spam dilution effect, not a sensor blind spot, since these writes are fully visible to the sensor but are diluted within the token sequence. The SougoLock profile reflects a separate, third limitation: the offset-resolution limit of Section~\ref{sec:4.5.3}, where the coarse 4-kilobyte offset granularity collapses distinct write locations into the same token. Table~\ref{tab:4-7} reports the per-hash opcode breakdown for the Akira and Guunra vectored-I/O blind-spot variants.
 
 \begin{table}[htbp]
 \centering
-\caption{Per-hash opcode breakdown for the Akira and Guunra runs affected by vectored-I/\allowbreak{}O sensor blind spots.}\label{tab:4-7}
+\caption{Per-hash opcode breakdown for the Akira and Guunra runs affected by vectored-I/O sensor blind spots.}\label{tab:4-7}
 \begin{adjustbox}{max width=\textwidth}
 \small
 \begin{tabular}{llrrlll}
@@ -1047,7 +1056,7 @@ Total & --- & 122 & 16,194,991 & 0.0\% & 0.0\% & 100.0\% \\
 \end{adjustbox}
 \end{table}
 
-Note. Two additional Akira variants (3b4137e8, 5114c107) rename files to the .akira extension but do not encrypt content on Linux (md5-confirmed unchanged); they are ESXi-oriented builds whose encryption path is gated to that platform. They are excluded from this table because they do not exhibit the vectored-I/\allowbreak{}O write pattern analyzed here.
+Note. Two additional Akira variants (3b4137e8, 5114c107) rename files to the .akira extension but do not encrypt content on Linux (md5-confirmed unchanged); they are ESXi-oriented builds whose encryption path is gated to that platform. They are excluded from this table because they do not exhibit the vectored-I/O write pattern analyzed here.
 
 \subsection{Root Causes of Token-Representation Failures}\label{sec:4.5.3}
 
@@ -1096,7 +1105,7 @@ Aggregate & --- & --- & --- & 193 & 4 & 0.7274 & 0.9016 \\
 
 \section{Production Model Configuration and Inference Microbenchmark}\label{sec:4.7}
 
-For the deployment measurements that follow, a separately trained prototype model is used. Unlike the LOFO folds, this model is trained on an 85/\allowbreak{}10/\allowbreak{}5 random split of all fourteen families, with the explicit goal of reporting model-inference latency, throughput, memory footprint, and early-detection behavior under a representative production configuration. Because this model has seen every family during training, it does not support cross-family generalization claims; those claims remain exclusive to Section~\ref{sec:4.3}. The measurements that follow characterize deployment feasibility --- latency, throughput, and memory footprint under a representative production configuration --- rather than the thesis's core detection-quality contributions, which are evaluated separately in Sections 4.3 and 4.4. Table~\ref{tab:4-9} summarizes the training configuration and in-training validation results for this deployment model.
+For the deployment measurements that follow, a separately trained prototype model is used. Unlike the LOFO folds, this model is trained on an 85/10/5 random split of all fourteen families, with the explicit goal of reporting model-inference latency, throughput, memory footprint, and early-detection behavior under a representative production configuration. Because this model has seen every family during training, it does not support cross-family generalization claims; those claims remain exclusive to Section~\ref{sec:4.3}. The measurements that follow characterize deployment feasibility --- latency, throughput, and memory footprint under a representative production configuration --- rather than the thesis's core detection-quality contributions, which are evaluated separately in Sections 4.3 and 4.4. Table~\ref{tab:4-9} summarizes the training configuration and in-training validation results for this deployment model.
 
 \begin{table}[htbp]
 \centering
@@ -1117,7 +1126,7 @@ Best validation loss & 0.0086 \\
 Val loss at epoch 10 & 0.0194 (overfit; best ckpt at epoch 7) \\
 Train loss at epoch 10 & 0.0008 \\
 Pos-weight (auto) & 4.34 \\
-Epochs run & 10 /\allowbreak{} 10 (full budget) \\
+Epochs run & 10 / 10 (full budget) \\
 Best epoch (deployed ckpt) & 7 (val\_\allowbreak{}loss = 0.0086) \\
 Training time (Colab T4) & $\approx$ 11 hours ($\approx$ 66 min/\allowbreak{}epoch $\times$ 10) \\
 Seed & 42 \\
@@ -1148,9 +1157,9 @@ Latency (CPU) & Mean per chunk & 0.855 ms \\
 Latency (CPU) & Median per chunk & 0.838 ms \\
 Latency (CPU) & P95 per chunk & 1.143 ms \\
 Latency (CPU) & P99 per chunk & 1.743 ms \\
-Latency (CPU) & Min /\allowbreak{} max per chunk & 0.624 /\allowbreak{} 2.127 ms \\
-Throughput (CPU) & Chunks /\allowbreak{} second & 1,169 \\
-Throughput (CPU) & Events /\allowbreak{} second & 116,914 \\
+Latency (CPU) & Min / max per chunk & 0.624 / 2.127 ms \\
+Throughput (CPU) & Chunks / second & 1,169 \\
+Throughput (CPU) & Events / second & 116,914 \\
 Memory (1,021 PIDs) & Baseline RSS & 309.3 MB \\
 Memory (1,021 PIDs) & Peak RSS & 435.9 MB \\
 Memory (1,021 PIDs) & Growth (n = 1,021 procs) & 126.6 MB \\
@@ -1185,9 +1194,9 @@ The five deployment and integration tests are summarized in Table~\ref{tab:4-11}
 \hline
 T1 & 30-second idle dashboard & 0 events & 0 & pipeline boots; probes attach \\
 T2 & 30 git commits + 30 file copies & 2,838 events & 0 & benign with trusted-name workload \\
-T3 & Akira parquet replay (PID 2538) & 19,937 /\allowbreak{} 200 chunks & 1 & bytes to first detection = 0.326 KiB \\
-T4 & 6 untrusted-comm workloads (dd /\allowbreak{} openssl /\allowbreak{} sha256sum /\allowbreak{} shred /\allowbreak{} make /\allowbreak{} gcc) & 2,898 events & 0 & selection-bias check --- 0 alerts \\
-T5 & SougoLock parquet replay (PID 2679) & 26,498 /\allowbreak{} 265 chunks & 1 & bytes to first detection $\approx$ 159.5 MiB \\
+T3 & Akira parquet replay (PID 2538) & 19,937 / 200 chunks & 1 & bytes to first detection = 0.326 KiB \\
+T4 & 6 untrusted-comm workloads (dd / openssl / sha256sum / shred / make / gcc) & 2,898 events & 0 & selection-bias check --- 0 alerts \\
+T5 & SougoLock parquet replay (PID 2679) & 26,498 / 265 chunks & 1 & bytes to first detection $\approx$ 159.5 MiB \\
 \hline
 \end{tabularx}
 \end{table}
@@ -1206,15 +1215,15 @@ Test T5 was an offline replay integration test using a previously recorded Sougo
 
 \subsection{Mixed-Workload Resilience}\label{sec:4.8.3}
 
-A separate mixed-workload experiment evaluated a live BlackBasta binary under four concurrent benign-I/\allowbreak{}O levels: none, light, medium, and heavy. The held-out BlackBasta LOFO checkpoint was used so that BlackBasta remained excluded from model training. One run was conducted at each workload level. The measured alert times were 0.87, 0.55, 0.57, and 0.41 seconds, respectively, and the corresponding cumulative write volumes at the first alert were 302.1, 136.1, 185.8, and 212.8 KiB. No false alerts or ring-buffer event drops were observed during these four runs. These measurements provide preliminary evidence that the held-out checkpoint remained operational under the tested concurrent workloads. Because only one run was performed at each level, the experiment does not establish detection guarantees or production resilience across repeated executions and broader workload conditions. Table~\ref{tab:4-12} summarizes the results for the four tested concurrent benign-I/\allowbreak{}O levels.
+A separate mixed-workload experiment evaluated a live BlackBasta binary under four concurrent benign-I/O levels: none, light, medium, and heavy. The held-out BlackBasta LOFO checkpoint was used so that BlackBasta remained excluded from model training. One run was conducted at each workload level. The measured alert times were 0.87, 0.55, 0.57, and 0.41 seconds, respectively, and the corresponding cumulative write volumes at the first alert were 302.1, 136.1, 185.8, and 212.8 KiB. No false alerts or ring-buffer event drops were observed during these four runs. These measurements provide preliminary evidence that the held-out checkpoint remained operational under the tested concurrent workloads. Because only one run was performed at each level, the experiment does not establish detection guarantees or production resilience across repeated executions and broader workload conditions. Table~\ref{tab:4-12} summarizes the results for the four tested concurrent benign-I/O levels.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Mixed-workload resilience: BlackBasta (held-out) detection under four concurrent benign I/\allowbreak{}O levels.}\label{tab:4-12}
+\caption{Mixed-workload resilience: BlackBasta (held-out) detection under four concurrent benign I/O levels.}\label{tab:4-12}
 \begin{tabularx}{\textwidth}{LllLLrr}
 \hline
-\textbf{I/\allowbreak{}O level} & \textbf{MDR} & \textbf{Detection} & \textbf{WRITE bytes at alert} & \textbf{Files at alert} & \textbf{FP} & \textbf{Dropped} \\
+\textbf{I/O level} & \textbf{MDR} & \textbf{Detection} & \textbf{WRITE bytes at alert} & \textbf{Files at alert} & \textbf{FP} & \textbf{Dropped} \\
 \hline
 None & 0.0\% & 0.87 s & 302.1 KiB & 5 & 0 & 0 \\
 Light (dd) & 0.0\% & 0.55 s & 136.1 KiB & 6 & 0 & 0 \\
@@ -1269,7 +1278,7 @@ Note. The unit in the second column is the number of eligible malware processes,
 
 The aligned-cohort comparison produced mean AUC values of 0.9980 for the Random Forest, 0.9757 for the SVM, and 0.9752 for the \textmu{}LSTM. The SVM and \textmu{}LSTM therefore achieved similar mean AUC, whereas the Random Forest achieved a higher mean AUC. At the matched operating point of no more than 1\% benign FPR, the mean per-family MDR was 2.8\% for both aggregate-feature baselines and 9.9\% for the \textmu{}LSTM. The models should consequently not be described as equivalent in overall detection outcomes. The comparison indicates that aggregate VFS features contain substantial discriminative information, but it does not establish that the input representation alone determines performance.
 
-The LOFO comparison in Table~\ref{tab:4-13} does not by itself establish deployment equivalence. In a separate matched Stage 1 diagnostic using a common 100-event horizon, the Random Forest and \textmu{}LSTM each detected 18 of 18 replayed malware processes from six families and produced the same MBD3 P75. Median measured per-process detector state was 2,508.2 KiB for the Random Forest and 631.94 KiB for the \textmu{}LSTM. Under the tested heavy-load VPS configuration, the ONNX Random Forest processed 14,902 events/\allowbreak{}s with a 15.2\% event-drop rate, whereas the \textmu{}LSTM processed 9,034 events/\allowbreak{}s with a 58.4\% event-drop rate. Because the replay used all-family deployment models and a small six-family cohort, and the throughput comparison used two repetitions per detector, these findings are supplementary diagnostics rather than LOFO or production-wide estimates. They support a lower measured memory footprint for the \textmu{}LSTM in the evaluated replay cohort, not a universal bounded-memory, accuracy, or throughput advantage.
+The LOFO comparison in Table~\ref{tab:4-13} does not by itself establish deployment equivalence. In a separate matched Stage 1 diagnostic using a common 100-event horizon, the Random Forest and \textmu{}LSTM each detected 18 of 18 replayed malware processes from six families and produced the same MBD3 P75. Median measured per-process detector state was 2,508.2 KiB for the Random Forest and 631.94 KiB for the \textmu{}LSTM. Under the tested heavy-load VPS configuration, the ONNX Random Forest processed 14,902 events/s with a 15.2\% event-drop rate, whereas the \textmu{}LSTM processed 9,034 events/s with a 58.4\% event-drop rate. Because the replay used all-family deployment models and a small six-family cohort, and the throughput comparison used two repetitions per detector, these findings are supplementary diagnostics rather than LOFO or production-wide estimates. They support a lower measured memory footprint for the \textmu{}LSTM in the evaluated replay cohort, not a universal bounded-memory, accuracy, or throughput advantage.
 
 \section{Chapter Summary}\label{sec:4.10}
 
@@ -1303,13 +1312,13 @@ RQ3 concerns the amount of data written before detection. Although MDR indicates
 
 \subsection{Mixed-Workload Feasibility}\label{sec:5.1.4}
 
-The mixed-workload experiment was designed as a supplementary feasibility test rather than a statistical evaluation of workload resilience. BlackBasta served as an encryption-dominant test case for evaluating whether concurrent benign I/\allowbreak{}O prevented event capture or alert generation. The prototype generated an alert at all four evaluated workload levels, with no observed false alerts or ring-buffer event drops. However, because only one run was conducted at each level, the experiment does not quantify run-to-run variability or support generalization to other ransomware families and workload combinations. Repeated trials across multiple families remain necessary for a formal resilience evaluation.
+The mixed-workload experiment was designed as a supplementary feasibility test rather than a statistical evaluation of workload resilience. BlackBasta served as an encryption-dominant test case for evaluating whether concurrent benign I/O prevented event capture or alert generation. The prototype generated an alert at all four evaluated workload levels, with no observed false alerts or ring-buffer event drops. However, because only one run was conducted at each level, the experiment does not quantify run-to-run variability or support generalization to other ransomware families and workload combinations. Repeated trials across multiple families remain necessary for a formal resilience evaluation.
 
 \section{Comparison with the CLEAR Framework}\label{sec:5.2}
 
-CLEAR \cite{ref9} reported an MDR of 0.36\% and an MBD3 of 50 MB using Windows NVMe command streams from 47 ransomware families and 137 variants. These values are not directly comparable with the results of This thematic paper. CLEAR defines MDR as missed ransomware traffic volume at an operating point calibrated to one false alarm per 50 GiB of benign traffic, whereas This thematic paper reports the proportion of missed malware processes at a fixed Stage 1 threshold of 0.30.
+CLEAR \cite{ref9} reported an MDR of 0.36\% and an MBD3 of 50 MB using Windows NVMe command streams from 47 ransomware families and 137 variants. These values are not directly comparable with the results of this thematic paper. CLEAR defines MDR as missed ransomware traffic volume at an operating point calibrated to one false alarm per 50 GiB of benign traffic, whereas this thematic paper reports the proportion of missed malware processes at a fixed Stage 1 threshold of 0.30.
 
-The two studies also differ in dataset diversity and sensor visibility. CLEAR evaluates a larger collection of families and variants at the NVMe command layer, whereas This thematic paper evaluates fourteen Linux families represented by twenty-eight binaries using process-level VFS events. The prototype also replaces CLEAR's Read-after-Write auxiliary bit with a categorical RENAME flag and uses different offset allocation and overlap-tracking mechanisms.
+The two studies also differ in dataset diversity and sensor visibility. CLEAR evaluates a larger collection of families and variants at the NVMe command layer, whereas this thematic paper evaluates fourteen Linux families represented by twenty-eight binaries using process-level VFS events. The prototype also replaces CLEAR's Read-after-Write auxiliary bit with a categorical RENAME flag and uses different offset allocation and overlap-tracking mechanisms.
 
 The results therefore demonstrate the feasibility of adapting CLEAR-inspired compact tokenization and stateful sequence processing to the evaluated Linux VFS environment. They do not establish implementation equivalence with CLEAR or permit direct numerical attribution of performance differences to the operating system, sensor layer, or classifier.
 
@@ -1321,7 +1330,7 @@ The dataset contains fourteen families and twenty-eight binaries, with nine fami
 
 \subsection{Sensor Visibility and OpCode Coverage}\label{sec:5.3.2}
 
-The sensor monitors selected read, write, and rename paths but does not provide complete visibility into vectored I/\allowbreak{}O, io\_\allowbreak{}uring, memory-mapped writeback, or direct block-device access. Ransomware using uninstrumented paths may therefore evade the current prototype, motivating broader hook coverage in future work.
+The sensor monitors selected read, write, and rename paths but does not provide complete visibility into vectored I/O, io\_\allowbreak{}uring, memory-mapped writeback, or direct block-device access. Ransomware using uninstrumented paths may therefore evade the current prototype, motivating broader hook coverage in future work.
 
 \subsection{Metric Interpretation}\label{sec:5.3.3}
 
@@ -1339,7 +1348,7 @@ Future evaluation should expand the number of binaries within each family, inclu
 
 \subsection{Production Deployment and Sensor Extensions}\label{sec:5.4.2}
 
-Deployment-oriented work should extend sensor visibility to vectored I/\allowbreak{}O, io\_\allowbreak{}uring, and memory-mapped writeback; measure end-to-end latency and resource consumption; and evaluate smaller decision windows for high-throughput ransomware. Persisting per-process Stage 1 and Stage 2 probability traces would further support diagnosis of model misses and heuristic suppression.
+Deployment-oriented work should extend sensor visibility to vectored I/O, io\_\allowbreak{}uring, and memory-mapped writeback; measure end-to-end latency and resource consumption; and evaluate smaller decision windows for high-throughput ransomware. Persisting per-process Stage 1 and Stage 2 probability traces would further support diagnosis of model misses and heuristic suppression.
 
 \section{Concluding Remarks}\label{sec:5.5}
 
@@ -1372,7 +1381,7 @@ The results remain conditional on the evaluated families, binaries, sensor hooks
 \bibitem{ref21} M. Cen, F. Jiang, and R. Doss, ``RansoGuard: A RNN-based Framework Leveraging Pre-attack Sensitive APIs for Early Ransomware Detection,'' Computers \& Security, vol. 150, art. 104293, 2025.
 \bibitem{ref22} M. Hirano, R. Hodota, and R. Kobayashi, ``RanSAP: An Open Dataset of Ransomware Storage Access Patterns for Training Machine Learning Models,'' Forensic Sci. Int.: Digital Investigation, 2022.
 \bibitem{ref23} M. Hirano and R. Kobayashi, ``RanSMAP: Open Dataset of Ransomware Storage and Memory Access Patterns,'' Computers \& Security, 2025.
-\bibitem{ref24} C. van Sloun, V. Woeste, K. Wolsing, J. Pennekamp, and K. Wehrle, ``Detecting Ransomware Despite I/\allowbreak{}O Overhead: A Practical Multi-Staged Approach,'' in Proc. 22nd Annu. Network and Distributed System Security Symp. (NDSS '25), San Diego, CA, USA, Feb. 2025, doi: 10.14722/\allowbreak{}ndss.2025.240764.
+\bibitem{ref24} C. van Sloun, V. Woeste, K. Wolsing, J. Pennekamp, and K. Wehrle, ``Detecting Ransomware Despite I/O Overhead: A Practical Multi-Staged Approach,'' in Proc. 22nd Annu. Network and Distributed System Security Symp. (NDSS '25), San Diego, CA, USA, Feb. 2025, doi: 10.14722/\allowbreak{}ndss.2025.240764.
 \bibitem{ref25} D. Gagulic, L. Zumtaugwald, and S. Sahu, ``Ransomware Detection with Machine Learning in Storage Systems,'' Master Project, Dept. of Informatics, Univ. of Zurich, Feb. 2023.
 \bibitem{ref26} M. Hirano and R. Kobayashi, ``Machine Learning Based Ransomware Detection Using Storage Access Patterns Obtained From Live-forensic Hypervisor,'' in Proc. IEEE ISNCC, 2019.
 \bibitem{ref27} S. R. Davies, R. Macfarlane, and W. J. Buchanan, ``Comparison of Entropy Calculation Methods for Ransomware Encrypted File Identification,'' Entropy, vol. 24, MDPI, 2022.
@@ -1381,14 +1390,14 @@ The results remain conditional on the evaluated families, binaries, sensor hooks
 \bibitem{ref30} F. Pierazzi, F. Pendlebury, J. Cortellazzi, and L. Cavallaro, "Intriguing Properties of Adversarial ML Attacks in the Problem Space," in Proc. IEEE Symp. Security and Privacy (S\&P), pp. 1332--1349, 2020.
 \bibitem{ref31} R. Jordaney, K. Sharad, S. K. Dash, Z. Wang, D. Papini, I. Nouretdinov, and L. Cavallaro, "Transcend: Detecting Concept Drift in Malware Classification Models," in Proc. USENIX Security Symp., pp. 625--642, 2017.
 \bibitem{ref32} J. Luo, Z. Zhang, J. Luo, P. Yang, and R. Jing, ``Sequence-based malware detection using a single-bidirectional graph embedding and multi-task learning framework,'' J. Comput. Secur., vol. 31, no. 1, pp. 1--23, IOS Press, 2023, doi: 10.3233/\allowbreak{}JCS-230041.
-\bibitem{ref33} P. M. Anand, P. V. S. Charan, H. Chunduri, and S. K. Shukla, ``LARM: Linux Anti Ransomware Monitor,'' Comput. Secur., vol. 159, 2025, doi: 10.1016/\allowbreak{}j.cose.2025.104700.
+\bibitem{ref33} P. M. Anand, P. V. S. Charan, H. Chunduri, and S. K. Shukla, ``LARM: Linux Anti Ransomware Monitor,'' Comput. Secur., vol. 159, 2025, doi: 10.1016/j.cose.2025.104700.
 \bibitem{ref34} Y. Wang, J. Zhang, H. Huang, X. Wang, X. Wu, S. Pei, L. Zhang, J. Hu, J. Cao, P. Zhang, X. Liao, and H. Jin, ``Ransom Access Memories: Achieving Practical Ransomware Protection in Cloud with DeftPunk,'' in Proc. 18th USENIX Symp. Operating Systems Design and Implementation (OSDI '24), 2024.
 \bibitem{ref35} C. Zhu, Z. Hu, K. Mu, R. Sun, L. Han, S. Liu, and J. Yan, ``Minding the Semantic Gap for Effective Storage-Based Ransomware Defense,'' in Proc. 40th IEEE Int. Conf. Massive Storage Systems and Technology (MSST), 2024.
 \bibitem{ref36} D. Ma, S. Wang, Y. Zhang, K. Yang, J. Wang, J. Zhu, and Y. Zhang, ``Traveling the Hypervisor and SSD: A Tag-Based Approach Against Crypto Ransomware with Fine-Grained Data Recovery,'' in Proc. 30th ACM SIGSAC Conf. Computer and Communications Security (CCS), 2023.
 \bibitem{ref37} K. Higuchi and R. Kobayashi, ``Real-Time Defense System Using eBPF for Machine Learning-Based Ransomware Detection Method,'' in Proc. 2023 Int. Conf. Computational Science and Its Applications Workshops (CANDARW), IEEE, 2023.
 \bibitem{ref38} A. Kharraz and E. Kirda, ``Redemption: Real-Time Protection Against Ransomware at End-Hosts,'' in Research in Attacks, Intrusions, and Defenses (RAID), Springer LNCS, 2017.
 \bibitem{ref39} A. Continella, A. Guagnelli, G. Zingaro, G. De Pasquale, A. Barenghi, S. Maggi, ``ShieldFS: A Self-Healing, Ransomware-Aware Filesystem,'' in Proc. 32nd Annu. Computer Security Applications Conf. (ACSAC), ACM, 2016, pp. 336--347.
-\bibitem{ref40} The Linux man-pages project, ``Linux Programmer's Manual: inotify(7), fanotify(7), auditd(8), strace(1),'' Accessed: Jul. 13, 2026. [Online]. Available: https:/\allowbreak{}/\allowbreak{}man7.org/\allowbreak{}linux/\allowbreak{}man-pages/\allowbreak{}
+\bibitem{ref40} The Linux man-pages project, ``Linux Programmer's Manual: inotify(7), fanotify(7), auditd(8), strace(1),'' Accessed: Jul. 13, 2026. [Online]. Available: https://man7.org/\allowbreak{}linux/\allowbreak{}man-pages/
 \bibitem{ref41} B. Gregg, Systems Performance: Enterprise and the Cloud, 2nd ed. Boston, MA, USA: Addison-Wesley Professional, 2020.
 \bibitem{ref42} Z. J. Wang, E. Montoya, D. Munechika, H. Yang, B. Hoover, and D. H. Chau, ``DiffusionDB: A Large-scale Prompt Gallery Dataset for Text-to-Image Generative Models,'' arXiv:2210.14896, 2022.
 \bibitem{ref43} S. Hochreiter and J. Schmidhuber, ``Long Short-Term Memory,'' Neural Computation, vol. 9, no. 8, pp. 1735--1780, 1997.
@@ -1481,7 +1490,7 @@ Total & 28 binaries & 494 & --- \\
 \end{small}
 \end{center}
 
-\noindent\textit{Note.} SHA-256 values are abbreviated to the first 16 hexadecimal characters; the complete hashes are retained in the corresponding recording\_\allowbreak{}metadata.json files. Both indicates that the binary appears in ransomware-only and mixed-mode recordings.
+\noindent\textit{Note.} SHA-256 values are abbreviated to the first 16 hexadecimal characters; the complete hashes are retained in the corresponding recording\_\allowbreak{}metadata.\allowbreak{}json files. Both indicates that the binary appears in ransomware-only and mixed-mode recordings.
 
 \section{Excluded Families}\label{sec:A.3}
 
@@ -1607,9 +1616,9 @@ RENAME & 5 & vfs\_\allowbreak{}rename & trace\_\allowbreak{}rename \\
 
 \subsection{Path Reconstruction and Filtering}\label{sec:C.1.1}
 
-Because a complete path is not supplied directly to the probe, the sensor follows the dentry parent chain through seven fixed fields (d0 to d6). User space reverses the nonempty components and joins them into a relative path. The collection implementation prefixes events from the target NVMe device with the fixed mount path used by the collection environment and prefixes other events with '/\allowbreak{}'. The depth is bounded to keep the BPF program verifier-safe and the event record fixed in size; paths deeper than seven components can therefore be truncated.
+Because a complete path is not supplied directly to the probe, the sensor follows the dentry parent chain through seven fixed fields (d0 to d6). User space reverses the nonempty components and joins them into a relative path. The collection implementation prefixes events from the target NVMe device with the fixed mount path used by the collection environment and prefixes other events with '/'. The depth is bounded to keep the BPF program verifier-safe and the event record fixed in size; paths deeper than seven components can therefore be truncated.
 
-For READ and WRITE, the probe rejects the sensor's own PID and PIDs below 100 before submitting an event. The RENAME handler rejects the sensor's own PID but does not apply the PID-below-100 test. After delivery, the collection logger removes events whose process name contains gnome-shell, Xorg, vboxguest, VBoxService, sshd, sftp-server, or systemd. It also discards /\allowbreak{}tmp, /\allowbreak{}proc, and /\allowbreak{}sys events outside the target disk. These collection-time exclusions are distinct from the six-process post-collection noise filter described in Section~\ref{sec:C.2.3}.
+For READ and WRITE, the probe rejects the sensor's own PID and PIDs below 100 before submitting an event. The RENAME handler rejects the sensor's own PID but does not apply the PID-below-100 test. After delivery, the collection logger removes events whose process name contains gnome-shell, Xorg, vboxguest, VBoxService, sshd, sftp-server, or systemd. It also discards /tmp, /proc, and /sys events outside the target disk. These collection-time exclusions are distinct from the six-process post-collection noise filter described in Section~\ref{sec:C.2.3}.
 
 \subsection{Buffering and Probe Attachment}\label{sec:C.1.2}
 
@@ -1674,7 +1683,7 @@ Read history & Overlap attributes derived from command-history intervals & Only 
 
 \subsection{Post-Collection Noise Filter}\label{sec:C.2.3}
 
-The post-collection filter removes events produced by wc, pgrep, ps, awk, top, and dirname from malware-session recordings. This six-name filter produces recording\_\allowbreak{}filtered.parquet and is separate from the seven-name collection-time exclusion in Section~\ref{sec:C.1.1}. Its measured effect is available only for the 280 v478 runs that retain distinct pre-filter and post-filter recordings.
+The post-collection filter removes events produced by wc, pgrep, ps, awk, top, and dirname from malware-session recordings. This six-name filter produces recording\_\allowbreak{}filtered.\allowbreak{}parquet and is separate from the seven-name collection-time exclusion in Section~\ref{sec:C.1.1}. Its measured effect is available only for the 280 v478 runs that retain distinct pre-filter and post-filter recordings.
 
 \begin{table}[htbp]
 \centering
@@ -1707,13 +1716,13 @@ After timestamp normalization and path repair, event labels are assigned by case
 \textbf{Artifact} & \textbf{Format} & \textbf{Contents and purpose} \\
 \hline
 recording.parquet & Parquet & Eight event fields: Timestamp, Process ID, Process Name, OpCode, Path Name, Offset (Bytes), Size (Bytes), and Label. \\
-process\_\allowbreak{}tree.parquet & Parquet & Process Name, Process ID, Parent Process ID, reconstructed Process Tree, and Command Line for lineage and sample auditing. \\
-recording\_\allowbreak{}metadata.json & JSON & Run type, family, SHA-256, workload, duration, command and traffic counts, label counts, malware opcode counts, and blind-spot indicator. \\
+process\_\allowbreak{}tree.\allowbreak{}parquet & Parquet & Process Name, Process ID, Parent Process ID, reconstructed Process Tree, and Command Line for lineage and sample auditing. \\
+recording\_\allowbreak{}metadata.\allowbreak{}json & JSON & Run type, family, SHA-256, workload, duration, command and traffic counts, label counts, malware opcode counts, and blind-spot indicator. \\
 \hline
 \end{tabularx}
 \end{table}
 
-\noindent\textit{Note.} recording\_\allowbreak{}filtered.parquet is generated after conversion by applying the six-process filter in Section~\ref{sec:C.2.3}. It is a filtered event recording, not an additional raw-conversion artifact.
+\noindent\textit{Note.} recording\_\allowbreak{}filtered.\allowbreak{}parquet is generated after conversion by applying the six-process filter in Section~\ref{sec:C.2.3}. It is a filtered event recording, not an additional raw-conversion artifact.
 
 \section{Reproducibility Boundaries}\label{sec:C.4}
 
@@ -1748,7 +1757,7 @@ Data-quality audit & After collection & Threshold rules in Table~\ref{tab:appd-2
 
 \section{Implemented Data-Quality Audit}\label{sec:D.2}
 
-The audit reads only the Label and Path Name columns from each Parquet recording. It counts total, benign-labeled, and malware-labeled events and counts paths containing '/\allowbreak{}media' as victim-path hits. The implemented decision rules are listed in Table~\ref{tab:appd-2} in evaluation order.
+The audit reads only the Label and Path Name columns from each Parquet recording. It counts total, benign-labeled, and malware-labeled events and counts paths containing '/media' as victim-path hits. The implemented decision rules are listed in Table~\ref{tab:appd-2} in evaluation order.
 
 \begin{table}[htbp]
 \centering
@@ -1866,7 +1875,7 @@ Full collection attempt & 3 & Initial attempt plus two retries; each begins with
 
 Snapshot restoration reduces persistent state between full attempts but does not by itself prove that cross-run contamination is impossible. The shared-folder check, target-directory validation, and per-attempt log removal provide additional safeguards. The random pre-attack delay is not reproducible unless the Python random-number generator is explicitly seeded.
 
-The quality thresholds in this appendix are operational screening choices. No completed sensitivity analysis was identified for these audit thresholds; consequently, the thresholds should not be presented as empirically optimized. The metadata blind-spot indicator is also a narrow diagnostic flag: it is set when malware-labeled WRITE events are below 1,000 while malware-labeled RENAME events exceed 1,000. It does not independently verify every unobserved I/\allowbreak{}O mechanism.
+The quality thresholds in this appendix are operational screening choices. No completed sensitivity analysis was identified for these audit thresholds; consequently, the thresholds should not be presented as empirically optimized. The metadata blind-spot indicator is also a narrow diagnostic flag: it is set when malware-labeled WRITE events are below 1,000 while malware-labeled RENAME events exceed 1,000. It does not independently verify every unobserved I/O mechanism.
 
 
 % ---- Appendix E: f5a7503c-appendix_E_realtime_deployment.docx ----
@@ -1886,7 +1895,7 @@ The dashboard implementation runs as one Python process. Its primary thread poll
 \hline
 \textbf{Role} & \textbf{Execution context} & \textbf{Implemented responsibility} \\
 \hline
-Event ingestion & Primary thread & Compile and attach probes, poll file-I/\allowbreak{}O and auxiliary network ring buffers, copy event fields, enqueue file-I/\allowbreak{}O events, and periodically read cleanup and drop statistics. \\
+Event ingestion & Primary thread & Compile and attach probes, poll file-I/O and auxiliary network ring buffers, copy event fields, enqueue file-I/O events, and periodically read cleanup and drop statistics. \\
 Inference worker & Daemon thread & Reconstruct paths, filter events, maintain per-PID state, tokenize events, run the \textmu{}LSTM, apply the sustained-probability and heuristic decisions, and invoke the alert handler. \\
 Web service & Daemon thread & Run the threaded Flask server and expose the dashboard, REST endpoints, and WebSocket endpoint. \\
 Dashboard broadcaster & Daemon thread & Serialize shared dashboard state and publish snapshots to connected WebSocket clients at the configured interval. \\
@@ -1896,7 +1905,7 @@ Dashboard broadcaster & Daemon thread & Serialize shared dashboard state and pub
 
 \section{Inter-Thread Communication}\label{sec:E.2}
 
-The ring-buffer callback copies each file-I/\allowbreak{}O event into a plain Python tuple because the ctypes object returned by BCC is valid only during the callback. The tuple is inserted into a bounded queue without blocking. The inference worker consumes these copies and updates a shared DashboardState object. DashboardState serializes most state access through a lock before the web service or broadcaster creates a snapshot.
+The ring-buffer callback copies each file-I/O event into a plain Python tuple because the ctypes object returned by BCC is valid only during the callback. The tuple is inserted into a bounded queue without blocking. The inference worker consumes these copies and updates a shared DashboardState object. DashboardState serializes most state access through a lock before the web service or broadcaster creates a snapshot.
 
 \begin{table}[htbp]
 \centering
@@ -1964,7 +1973,7 @@ The heuristic checker implements eight conditions organized into six logical rul
 
 \section{Buffering, Back-Pressure, and PID Lifecycle}\label{sec:E.4}
 
-The dashboard configuration allocates a 32 MiB file-I/\allowbreak{}O BPF ring buffer shared across CPUs. The in-code fallback is 16 MiB when the configuration value is absent. Event delivery is nonblocking: a failed kernel submission increments a global per-CPU counter and a per-PID counter, while a full Python queue causes the callback to discard the copied event instead of waiting. This design prevents the monitoring process from intentionally blocking application I/\allowbreak{}O, but it permits event loss under load.
+The dashboard configuration allocates a 32 MiB file-I/O BPF ring buffer shared across CPUs. The in-code fallback is 16 MiB when the configuration value is absent. Event delivery is nonblocking: a failed kernel submission increments a global per-CPU counter and a per-PID counter, while a full Python queue causes the callback to discard the copied event instead of waiting. This design prevents the monitoring process from intentionally blocking application I/O, but it permits event loss under load.
 
 \begin{table}[htbp]
 \centering
@@ -1974,18 +1983,18 @@ The dashboard configuration allocates a 32 MiB file-I/\allowbreak{}O BPF ring bu
 \hline
 \textbf{Mechanism} & \textbf{Implemented bound or trigger} & \textbf{Effect} \\
 \hline
-File-I/\allowbreak{}O BPF ring buffer & 32 MiB in trace.yaml; 16 MiB fallback & Shared kernel-to-user event channel \\
+File-I/O BPF ring buffer & 32 MiB in trace.yaml; 16 MiB fallback & Shared kernel-to-user event channel \\
 User-space event queue & 500,000 copied events & Drops the incoming event when full \\
 Per-process path sets & 1,000 read paths and 1,000 write paths & Bounds heuristic and alert-record memory \\
 Auxiliary network lists & 50 connections and 50 DNS records per PID & Bounds dashboard-only network metadata \\
 Process exit & sched\_\allowbreak{}process\_\allowbreak{}exit sentinel & Immediately removes PID state from the manager \\
-Fallback cleanup & At most once every 30 seconds; remove PID when /\allowbreak{}proc/\allowbreak{}\textless{}pid\textgreater{}/\allowbreak{}stat cannot be opened & Removes state when the exit sentinel is absent \\
+Fallback cleanup & At most once every 30 seconds; remove PID when /proc/\textless{}pid\textgreater{}/stat cannot be opened & Removes state when the exit sentinel is absent \\
 Confirmed alert & PID added to an in-process alerted set & Skips subsequent events for that PID during the current process lifetime \\
 \hline
 \end{tabularx}
 \end{table}
 
-\noindent\textit{Implementation limitation.} PIDStateManager accepts stale\_\allowbreak{}timeout = 120 seconds, but cleanup\_\allowbreak{}stale() does not currently apply elapsed inactivity against that value; it performs only the 30-second-gated /\allowbreak{}proc existence check. In addition, a full Python queue increments DashboardState.lost\_\allowbreak{}events, but the periodic status update later assigns the kernel drop total to the same field. Kernel and user-space queue losses are therefore not retained as independent cumulative counters.
+\noindent\textit{Implementation limitation.} PIDStateManager accepts stale\_\allowbreak{}timeout = 120 seconds, but cleanup\_\allowbreak{}stale() does not currently apply elapsed inactivity against that value; it performs only the 30-second-gated /proc existence check. In addition, a full Python queue increments DashboardState.lost\_\allowbreak{}events, but the periodic status update later assigns the kernel drop total to the same field. Kernel and user-space queue losses are therefore not retained as independent cumulative counters.
 
 \section{Alert Actions and Shutdown}\label{sec:E.5}
 
@@ -2024,7 +2033,7 @@ The dashboard and standalone scripts share the sensor source, tokenizer, \textmu
 Default probability threshold & 0.85 from trace.yaml & 0.30 command-line default \\
 Sustained condition & Three chunks & Three chunks by default \\
 Heuristic checker & Enabled after the sustained condition & Not invoked \\
-File-I/\allowbreak{}O ring buffer & 32 MiB from trace.yaml & 16 MiB hard-coded \\
+File-I/O ring buffer & 32 MiB from trace.yaml & 16 MiB hard-coded \\
 Inference queue & Bounded worker queue & Inference runs in the ring-buffer callback \\
 Dashboard and auxiliary network telemetry & Enabled & Not attached \\
 \hline
@@ -2053,7 +2062,7 @@ This replay compares a probability output after every event with an output after
 \caption{Per-event and per-chunk output-frequency comparison.}\label{tab:appf-1}
 \begin{tabularx}{\textwidth}{lLrrlLllr}
 \hline
-\textbf{Model} & \textbf{Reporting} & \textbf{nMW} & \textbf{nBN} & \textbf{MDR (\%)} & \textbf{MBD3 P75 (KiB)} & \textbf{FPR (\%)} & \textbf{ms/\allowbreak{}event} & \textbf{events/\allowbreak{}s} \\
+\textbf{Model} & \textbf{Reporting} & \textbf{nMW} & \textbf{nBN} & \textbf{MDR (\%)} & \textbf{MBD3 P75 (KiB)} & \textbf{FPR (\%)} & \textbf{ms/event} & \textbf{events/s} \\
 \hline
 Final & Per event & 43 & 1,050 & 0.0 & 41.8 & 2.762 & 0.5503 & 1,817 \\
 Final & Per 100 events & 43 & 1,069 & 0.0 & 1,887.1 & 0.094 & 0.0124 & 80,698 \\
@@ -2061,15 +2070,15 @@ Akira & Per event & 40 & 1,042 & 17.5 & 7.8 & 4.607 & 0.5514 & 1,814 \\
 Akira & Per 100 events & 40 & 1,072 & 17.5 & 10.5 & 0.093 & 0.0121 & 82,458 \\
 HelloKitty & Per event & 58 & 1,057 & 34.483 & 859.6 & 2.081 & 0.5532 & 1,808 \\
 HelloKitty & Per 100 events & 58 & 1,038 & 34.483 & 10,180.7 & 0.385 & 0.0124 & 80,379 \\
-SougoLock & Per event & 10 & 1,047 & 100.0 & N/\allowbreak{}A & 3.343 & 0.5559 & 1,799 \\
-SougoLock & Per 100 events & 10 & 1,053 & 100.0 & N/\allowbreak{}A & 0.000 & 0.0141 & 71,066 \\
+SougoLock & Per event & 10 & 1,047 & 100.0 & N/A & 3.343 & 0.5559 & 1,799 \\
+SougoLock & Per 100 events & 10 & 1,053 & 100.0 & N/A & 0.000 & 0.0141 & 71,066 \\
 \hline
 \end{tabularx}
 \end{table}
 
-\noindent\textit{Note.} MBD3 is the 75th percentile of cumulative WRITE bytes before first detection among detected malware processes. N/\allowbreak{}A indicates that no SougoLock process was detected. nMW and nBN denote malware and benign process counts, respectively.
+\noindent\textit{Note.} MBD3 is the 75th percentile of cumulative WRITE bytes before first detection among detected malware processes. N/A indicates that no SougoLock process was detected. nMW and nBN denote malware and benign process counts, respectively.
 
-MDR is unchanged within each model, but the operational trade-off is substantial. For the final checkpoint, per-event output reduces MBD3 from 1,887.1 KiB to 41.8 KiB, while the benign-process false-positive rate rises from 0.094\% to 2.762\% and throughput falls from 80,698 to 1,817 events/\allowbreak{}s. HelloKitty shows a similar MBD3 reduction, from 10,180.7 KiB to 859.6 KiB, with a higher false-positive rate. The comparison therefore supports 100-event reporting as the evaluated efficiency and false-positive trade-off; it does not show that reporting frequency is irrelevant to bytes-to-detection.
+MDR is unchanged within each model, but the operational trade-off is substantial. For the final checkpoint, per-event output reduces MBD3 from 1,887.1 KiB to 41.8 KiB, while the benign-process false-positive rate rises from 0.094\% to 2.762\% and throughput falls from 80,698 to 1,817 events/s. HelloKitty shows a similar MBD3 reduction, from 10,180.7 KiB to 859.6 KiB, with a higher false-positive rate. The comparison therefore supports 100-event reporting as the evaluated efficiency and false-positive trade-off; it does not show that reporting frequency is irrelevant to bytes-to-detection.
 
 \section{Decision-Aggregation Ablation}\label{sec:F.3}
 
@@ -2168,13 +2177,13 @@ The SougoLock diagnostic retrains five configurations on the same held-out-famil
 \caption{SougoLock five-configuration root-cause ablation.}\label{tab:appf-5}
 \begin{tabularx}{\textwidth}{LLLlllrl}
 \hline
-\textbf{Configuration} & \textbf{Offset encoding} & \textbf{Other change or fields removed} & \textbf{MDR (\%)} & \textbf{AUC} & \textbf{TP/\allowbreak{}FN} & \textbf{FP} & \textbf{F1} \\
+\textbf{Configuration} & \textbf{Offset encoding} & \textbf{Other change or fields removed} & \textbf{MDR (\%)} & \textbf{AUC} & \textbf{TP/FN} & \textbf{FP} & \textbf{F1} \\
 \hline
-Baseline & 6-bit; 4 KiB & None & 100.00 & 0.9450 & 0/\allowbreak{}10 & 4 & 0.000 \\
-A & 6-bit; 4 KiB & CLEAR-faithful WaR & 90.00 & 0.9946 & 1/\allowbreak{}9 & 5 & 0.125 \\
-B & 12-bit; 256 B & delta-time, WaR, RaR & 0.00 & 0.9990 & 10/\allowbreak{}0 & 23 & 0.465 \\
-C & 6-bit; 4 KiB & delta-time & 100.00 & 0.7364 & 0/\allowbreak{}10 & 22 & 0.000 \\
-E & 6-bit; 4 KiB & delta-time, WaR, RaR & 100.00 & 0.9687 & 0/\allowbreak{}10 & 9 & 0.000 \\
+Baseline & 6-bit; 4 KiB & None & 100.00 & 0.9450 & 0/10 & 4 & 0.000 \\
+A & 6-bit; 4 KiB & CLEAR-faithful WaR & 90.00 & 0.9946 & 1/9 & 5 & 0.125 \\
+B & 12-bit; 256 B & delta-time, WaR, RaR & 0.00 & 0.9990 & 10/0 & 23 & 0.465 \\
+C & 6-bit; 4 KiB & delta-time & 100.00 & 0.7364 & 0/10 & 22 & 0.000 \\
+E & 6-bit; 4 KiB & delta-time, WaR, RaR & 100.00 & 0.9687 & 0/10 & 9 & 0.000 \\
 \hline
 \end{tabularx}
 \end{table}
