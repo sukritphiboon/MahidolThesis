@@ -42,6 +42,17 @@
 % of contents stays chapter-level, as the template intends.
 \renewcommand*\l@table{\@dottedtocline{0}{0em}{2.8em}}
 \renewcommand*\l@figure{\@dottedtocline{0}{0em}{2.8em}}
+% Float placement. LaTeX's defaults are conservative: a table or figure is
+% often refused on the current page, which pushes it later and leaves a large
+% gap behind. Allowing floats to occupy more of a page and requiring less text
+% alongside them keeps tables near their reference and reduces those gaps.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
 \makeatother
 
 \title{eBPF-based VFS Operations Ransomware Detection \& Prevention}
