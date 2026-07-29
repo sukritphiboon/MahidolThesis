@@ -43,6 +43,10 @@
 % level above \c@tocdepth. (The template's own sample output has the same empty
 % lists.) Re-declare them at level 0 so both lists are populated while the table
 % of contents stays chapter-level, as the template intends.
+% Heading numbers are separated from the title by a single space, matching
+% the faculty's Word template (``1.1 Headings (1)''). LaTeX's default
+% \@seccntformat uses \quad, which leaves a visibly wider gap.
+\renewcommand\@seccntformat[1]{\csname the#1\endcsname\ }
 \renewcommand*\l@table{\@dottedtocline{0}{0em}{2.8em}}
 \renewcommand*\l@figure{\@dottedtocline{0}{0em}{2.8em}}
 % Float placement. LaTeX's defaults are conservative: a table or figure is
