@@ -416,7 +416,7 @@ Publicly available datasets have played a central role in advancing ransomware d
 \textbf{Dataset} & \textbf{Year} & \textbf{Public} & \textbf{Family / variant coverage} & \textbf{OS} & \textbf{Sensor Layer} & \textbf{Event Labels} & \textbf{Mixed Workloads} \\
 \hline
 This work (2026) & 2026 & No & 14 families / 28 binaries & Linux & eBPF VFS (kprobe) & Yes & Yes \\
-CLEAR \cite{ref9} & 2025 & Yes & 47 families / 137 variants & Windows & NVMe commands & Yes & Yes \\
+CLEAR \cite{ref9} & 2025 & Yes & 49 families / 137 variants & Windows & NVMe commands & Yes & Yes \\
 RanSMAP \cite{ref23} & 2025 & Yes & 6 families & Windows & Block + memory & No & Yes \\
 DeftPunk \cite{ref34} & 2024 & No & 13 families & Windows, Linux & Cloud memory & No & Yes \\
 Zhu et al. \cite{ref35} & 2024 & No & 10 families & Linux & Storage & No & Yes \\
@@ -545,7 +545,7 @@ Before each data collection run, the VM was restored to a clean snapshot using V
 
 \subsection{eBPF Sensor Design}\label{sec:3.2.2}
 
-The data collection sensor uses the BCC (BPF Compiler Collection) framework \cite{ref41} to attach three kernel probes (kprobes) at the VFS layer: vfs\_\allowbreak{}read (opcode = 0), vfs\_\allowbreak{}write (opcode = 1), and vfs\_\allowbreak{}rename (opcode = 5). Each probe records the file offset, size, path, and process identity required for downstream tokenization.
+The data collection sensor uses the BCC (BPF Compiler Collection) framework \cite{ref41} to attach three kernel probes (kprobes) at the VFS layer: vfs\_\allowbreak{}read (sensor opcode = 2, remapped to model opcode 0 at tokenization), vfs\_\allowbreak{}write (opcode = 1), and vfs\_\allowbreak{}rename (opcode = 5). Each probe records the file offset, size, path, and process identity required for downstream tokenization.
 
 Each captured event is first staged in a one-record per-CPU array (BPF\_\allowbreak{}PERCPU\_\allowbreak{}ARRAY) to avoid exceeding the eBPF stack limit and is then submitted to userspace through BPF\_\allowbreak{}PERF\_\allowbreak{}OUTPUT. The userspace reader opens a perf buffer with page\_\allowbreak{}cnt = 8192 pages per CPU and registers a lost-event callback. Full path reconstruction walks up to seven dentry levels to balance verifier safety and path fidelity. The real-time deployment prototype described in Section~\ref{sec:3.8} uses a shared BPF ring buffer instead.
 
@@ -1381,7 +1381,7 @@ The mixed-workload experiment was designed as a supplementary feasibility test r
 
 \section{Comparison with the CLEAR Framework}\label{sec:5.2}
 
-CLEAR \cite{ref9} reported an MDR of 0.36\% and an MBD3 of 50 MB using Windows NVMe command streams from 47 ransomware families and 137 variants. These values are not directly comparable with the results of this thematic paper. CLEAR defines MDR as missed ransomware traffic volume at an operating point calibrated to one false alarm per 50 GiB of benign traffic, whereas this thematic paper reports the proportion of missed malware processes at a fixed Stage 1 threshold of 0.30.
+CLEAR \cite{ref9} reported an MDR of 0.36\% and an MBD3 of 50 MB using Windows NVMe command streams from 49 ransomware families and 137 variants. These values are not directly comparable with the results of this thematic paper. CLEAR defines MDR as missed ransomware traffic volume at an operating point calibrated to one false alarm per 50 GiB of benign traffic, whereas this thematic paper reports the proportion of missed malware processes at a fixed Stage 1 threshold of 0.30.
 
 The two studies also differ in dataset diversity and sensor visibility. CLEAR evaluates a larger collection of families and variants at the NVMe command layer, whereas this thematic paper evaluates fourteen Linux families represented by twenty-eight binaries using process-level VFS events. The prototype also replaces CLEAR's Read-after-Write auxiliary bit with a categorical RENAME flag and uses different offset allocation and overlap-tracking mechanisms.
 
