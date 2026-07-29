@@ -52,19 +52,31 @@
 % muthesis2026.cls a project happens to have. Values match the class: a section
 % is flush left, a subsection is indented by \parindent, and both are bold. The
 % negative "before" skips also stop the following paragraph from being indented.
+% Heading spacing. The space above a heading is added here explicitly instead
+% of being left to \@startsection's "beforeskip": that skip is applied through
+% \addvspace only when \if@nobreak is false, and on some TeX distributions the
+% space ends up suppressed, leaving the heading pressed against the paragraph
+% above it. Adding it directly makes the result identical everywhere.
+% \@startsection still receives a small negative skip, which keeps its usual
+% effect of not indenting the paragraph that follows the heading; \addvspace
+% takes the larger of the two, so the space is never applied twice.
+\newcommand\mu@headskip[1]{\par\@nobreakfalse\addvspace{#1}}
 \renewcommand\section{%
+  \mu@headskip{8.5ex}%
   \@startsection{section}{1}{\z@}%
-    {-8.5ex \@plus -1ex \@minus -.2ex}%
+    {-.1ex}%
     {1ex \@plus 4.7ex}%
     {\normalfont\large\bfseries}}
 \renewcommand\subsection{%
+  \mu@headskip{4.7ex}%
   \@startsection{subsection}{2}{\parindent}%
-    {-4.7ex \@plus -.2ex \@minus -.2ex}%
+    {-.1ex}%
     {0.1ex \@plus .1ex}%
     {\normalfont\normalsize\bfseries}}
 \renewcommand\subsubsection{%
+  \mu@headskip{1.3ex}%
   \@startsection{subsubsection}{3}{\parindent}%
-    {-1.3ex \@plus -.1ex \@minus -.1ex}%
+    {-.1ex}%
     {0.1ex \@plus .1ex}%
     {\normalfont\normalsize}}
 \renewcommand*\l@table{\@dottedtocline{0}{0em}{2.8em}}
