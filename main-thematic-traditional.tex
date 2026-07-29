@@ -22,6 +22,7 @@
 % long heading such as ``Configuration'' overflows a narrow column.
 \newcolumntype{L}{>{\raggedright\arraybackslash\hspace{0pt}}X}
 \usepackage{longtable}  % tables that break across pages (appendices)
+\usepackage{etoolbox}   % used to patch the biography layout below
 \usepackage{xltabular}  % long AND width-constrained: breaks across pages
                          % while still wrapping its X columns
 \usepackage{adjustbox}  % scale wide tables to \textwidth (appendices)
@@ -48,6 +49,14 @@
 % Heading numbers are separated from the title by a single space, matching
 % the faculty's Word template (``1.1 Headings (1)''). LaTeX's default
 % \@seccntformat uses \quad, which leaves a visibly wider gap.
+% The biography is laid out with tabbing, which never wraps: the degree line
+% "Master of Science (Cyber Security and Information Assurance)" starts at a
+% 5.5cm tab stop and runs off the right edge of the page. Split it so the
+% programme name sits on its own line.
+\patchcmd{\biography}%
+  {\>\>\@fulldegree\ (\@subject) \\}%
+  {\>\>\@fulldegree\ \\ \>\>(\@subject) \\}%
+  {}{\PackageWarning{thesis}{Could not patch the biography degree line}}
 \renewcommand\@seccntformat[1]{\csname the#1\endcsname\ }
 % Heading spacing is defined here rather than relied on from the class file,
 % so the vertical space above a heading is identical no matter which copy of
