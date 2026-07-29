@@ -34,6 +34,14 @@
   \chapter*{\bibname}%
   \addcontentsline{toc}{chapter}{\MakeUppercase{\bibname}}%
   \@mkboth{}{}}
+% The class sets \setcounter{tocdepth}{0}, which silently empties LIST OF
+% TABLES and LIST OF FIGURES too: report.cls declares \l@table and \l@figure as
+% level-1 \@dottedtocline entries, and \@dottedtocline prints nothing for a
+% level above \c@tocdepth. (The template's own sample output has the same empty
+% lists.) Re-declare them at level 0 so both lists are populated while the table
+% of contents stays chapter-level, as the template intends.
+\renewcommand*\l@table{\@dottedtocline{0}{0em}{2.8em}}
+\renewcommand*\l@figure{\@dottedtocline{0}{0em}{2.8em}}
 \makeatother
 
 \title{eBPF-based VFS Operations Ransomware Detection \& Prevention}
